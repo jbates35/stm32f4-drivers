@@ -83,12 +83,29 @@ void GPIO_init(GPIO_Handle_t *p_GPIO_handle) {
   gpiox->AFR[alt_no] &= ~(0xF << alt_shift);
   gpiox->AFR[alt_no] |= cfg->GPIO_pin_alt_func_mode << alt_shift;
 }
-void GPIO_deinit(GPIO_TypeDef *p_GPIO_x) {}
+
+/**
+  * @brief Reset the entire GPIO port
+  * 
+  * @param p_GPIO_x The base address of the GPIO port to reset
+  */
+void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x) {
+  if (p_GPIO_x == NULL) return;
+
+  const GPIO_TypeDef *GPIO_base_addrs[8] = GPIOS;
+  for (int i = 0; i < GPIO_SIZE(GPIO_base_addrs); i++) {
+    if (GPIO_base_addrs[i] != p_GPIO_x) continue;
+
+    // Turn reset register on and off
+    RCC->AHB1RSTR |= (1 << i);
+    RCC->AHB1RSTR &= ~(1 << i);
+  }
+}
 
 /**
  * @brief Read the entire value of the GPIO port
  *
- * @param p_GPIO_x GPIO port information
+ * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @return uint16_t Word containing the value of the GPIO port
  */
 uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x) {
@@ -100,23 +117,27 @@ uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x) {
 /**
  * @brief Value to be written to the given pin, when configured as output
  *
- * @param p_GPIO_x GPIO port information
+ * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param pin Pin which will be read
  * @param val Output value - 1 for high, 0 for low
  */
 void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) {
   if (p_GPIO_x == NULL) return;
 
-  if (val == 0)
-    p_GPIO_x->ODR &= ~(1 << pin);
+  if (val)
+    // Reset pin from  1 to 0
+    p_GPIO_x->BSRR |= (1 << pin << 16);
   else
-    p_GPIO_x->ODR |= (1 << pin);
+    // Set pin from 0 to 1
+    p_GPIO_x->BSRR |= (1 << pin);
 }
 
 /**
  * @brief Value to write to entire GPIO port, when configured as output
+ * Try not to use this. This is not race-condition protected
+ * TODO: Maybe re-write this function so it is atomic. That will require some logic as it needs to have each bit parsed and then be mapped to the BSRR reg accordingly
  *
- * @param p_GPIO_x GPIO port information
+ * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param val Word containing the value to be written to the GPIO port
  */
 void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
@@ -128,11 +149,18 @@ void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
 /**
  * @brief Toggle the output value of the given pin
  *
- * @param p_GPIO_x GPIO port information
+ * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param pin Pin to be toggled
  */
 void GPIO_toggle_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
   if (p_GPIO_x == NULL) return;
 
-  p_GPIO_x->ODR ^= (1 << pin);
+  uint8_t val = (p_GPIO_x->ODR) & (1 << pin);
+
+  if (val)
+    // Reset pin from  1 to 0
+    p_GPIO_x->BSRR |= (1 << pin << 16);
+  else
+    // Set pin from 0 to 1
+    p_GPIO_x->BSRR |= (1 << pin);
 }
