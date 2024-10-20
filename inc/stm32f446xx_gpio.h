@@ -10,6 +10,9 @@
 
 #include "stm32f446xx.h"
 
+#define GPIO_CLOCK_ENABLE 1
+#define GPIO_CLOCK_DISABLE 0
+
 /**
  * GPIO pin configuration structure
  * @GPIO_pin_number: the pin associated with the particular port (i.e. 5 if PE5)
@@ -68,18 +71,18 @@ typedef enum { GPIO_PUPDR_NONE = 0, GPIO_PUPDR_PULLUP = 1, GPIO_PUPDR_PULLDOWN =
 /*
  * Peripheral clock setup
  */
-void GPIO_peri_clock_control(GPIO_TypeDef *p_GPIO_x, uint8_t en_state);
+void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_x, const uint8_t en_state);
 
 /*
  * Init and de-init of GPIO
  */
-void GPIO_init(GPIO_Handle_t *p_GPIO_handle);
-void GPIO_deinit(GPIO_TypeDef *p_GPIO_x);
+void GPIO_init(const GPIO_Handle_t *p_GPIO_handle);
+void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x);
 
 /*
  * Data read and write
  */
-uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, uint8_t pin);
+uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, const uint8_t pin);
 uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x);
 void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val);
 void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val);
