@@ -15,13 +15,13 @@
  * @param p_GPIO_x Pointer to base address for gpio struct
  * @param en_state 1 for enable, 0 for disable
  */
-void GPIO_peri_clock_control(GPIO_TypeDef *p_GPIO_x, uint8_t en_state) {
+void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_x, const uint8_t en_state) {
   if (p_GPIO_x == NULL) return;
 
-  static GPIO_TypeDef *const gpio_base_addresses[8] = GPIOS;
+  static GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;
 
-  for (int i = 0; i < GPIO_SIZE(gpio_base_addresses); i++) {
-    if (gpio_base_addresses[i] != p_GPIO_x) continue;
+  for (int i = 0; i < GPIO_SIZE(GPIO_base_addrs); i++) {
+    if (GPIO_base_addrs[i] != p_GPIO_x) continue;
 
     if (en_state == ENABLE)
       RCC->AHB1ENR |= (1 << i);
@@ -31,9 +31,10 @@ void GPIO_peri_clock_control(GPIO_TypeDef *p_GPIO_x, uint8_t en_state) {
 }
 
 /*
- * Init and de-init of GPIO
+ * Initialize a GPIO pin
++* @param p_GPIO_handle The handle type as defined in the gpio.h file which describes both the base address and the required configuration
  */
-void GPIO_init(GPIO_Handle_t *p_GPIO_handle) {
+void GPIO_init(const GPIO_Handle_t *p_GPIO_handle) {
   if (p_GPIO_handle == NULL) return;
 
   // Create pointers to the GPIO port and the pin configuration for easier
@@ -58,6 +59,14 @@ void GPIO_init(GPIO_Handle_t *p_GPIO_handle) {
 
     /********* INTERRUPT LOGIC STARTS HERE **********/
     // Turn on correct EXTI
+    static GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;
+    for (int i = 0; i < GPIO_SIZE(GPIO_base_addrs); i++) {
+      if (GPIO_base_addrs[i] != gpiox) continue;
+
+      // Banks are grouped into groups of 4, one per pin (i.e. PA0, PB0, .. PH0 are multiplexed onto EXTI0)
+      uint8_t exti_index = cfg->GPIO_pin_number / 4;
+      SYSCFG->EXTICR[exti_index] |= (i << (qshift % 16));
+    }
 
     // Configure correct edge
 
