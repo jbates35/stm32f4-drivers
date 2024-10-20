@@ -112,6 +112,19 @@ void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x) {
 }
 
 /**
+ * @brief Reads the value of the given pin
+ *
+ * @param p_GPIO_x GPIO base address (and overlaid struct)
+ * @param pin Pin to be read
+ * @return uint8_t Value of the input associated with the pin
+ */
+uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
+  if (p_GPIO_x == NULL) return 0;
+
+  return (p_GPIO_x->IDR >> pin) & 0x1;
+}
+
+/**
  * @brief Read the entire value of the GPIO port
  *
  * @param p_GPIO_x GPIO base address (and overlaid struct)
