@@ -156,8 +156,7 @@ void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) 
 
 /**
  * @brief Value to write to entire GPIO port, when configured as output
- * Try not to use this. This is not race-condition protected
- * TODO: Maybe re-write this function so it is atomic. That will require some logic as it needs to have each bit parsed and then be mapped to the BSRR reg accordingly
+ * // TODO: Test this function
  *
  * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param val Word containing the value to be written to the GPIO port
@@ -165,7 +164,13 @@ void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) 
 void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
   if (p_GPIO_x == NULL) return;
 
-  p_GPIO_x->ODR = val;
+  // Set logic
+  uint32_t set_byte = (uint32_t)0xFFFF & val;
+  p_GPIO_x->BSRR |= set_byte;
+
+  // Reset logic
+  uint32_t reset_byte = (uint32_t)0xFFFF & ~val;
+  p_GPIO_x->BSRR |= set_byte << 16;
 }
 
 /**
