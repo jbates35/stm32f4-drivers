@@ -69,10 +69,23 @@ void GPIO_init(const GPIO_Handle_t *p_GPIO_handle) {
     }
 
     // Configure correct edge
+    if (cfg->GPIO_pin_mode == GPIO_MODE_IT_FT) {
+      EXTI->FTSR |= (1 << sshift);
+      EXTI->RTSR &= ~(1 << sshift);
+    } else if (cfg->GPIO_pin_mode == GPIO_MODE_IT_RT) {
+      EXTI->FTSR &= ~(1 << sshift);
+      EXTI->RTSR |= (1 << sshift);
+    } else {
+      EXTI->FTSR |= (1 << sshift);
+      EXTI->RTSR |= (1 << sshift);
+    }
 
     // Unmask bit in EXTI
+    EXTI->IMR |= (1 << sshift);
 
     // Make pin input
+    gpiox->MODER &= ~(0x3 << dshift);
+    gpiox->MODER |= (GPIO_MODE_IN << dshift);
   }
   // Set output speed - clear bits to 00 and then set
   gpiox->OSPEEDR &= ~(0x3 << dshift);
