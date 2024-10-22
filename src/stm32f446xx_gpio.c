@@ -204,3 +204,48 @@ void GPIO_toggle_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
     // Set pin from 0 to 1
     p_GPIO_x->BSRR |= (1 << pin);
 }
+
+/**
+ * @brief Configure the IRQ for the given pin
+ *
+ * @param irq_number IRQ number to be configured
+ * @param en_state State of the IRQ - 1 for enable, 0 for disable
+ */
+void GPIO_irq_interrupt_config(uint8_t irq_number, uint8_t en_state) {
+  // Enables or disables NVIC
+  // Programs ISER if enable, programs ICER if disable
+  if (en_state)
+    NVIC->ISER[irq_number / 32] |= (1 << (irq_number % 32));
+  else
+    NVIC->ICER[irq_number / 32] |= (1 << (irq_number % 32));
+}
+
+/**
+ * @brief Configure the IRQ priority
+ *
+ * @param irq_number IRQ number which priority should be changed
+ * @param irq_priority Priority of the IRQ
+ */
+void GPIO_irq_priority_config(uint8_t irq_number, uint8_t irq_priority) {
+  uint8_t qshift = (irq_number * 8) % 32;  // Will result in bits 0 - 240*8
+  uint8_t qindex = (irq_number * 8) / 32;
+
+  NVIC->IP[qindex] &= ~(0xFF << qshift);
+  NVIC->IP[qindex] |= (irq_priority << qshift << 4) & (0xF0 << qshift);
+}
+
+/**
+ * @brief Set the IRQ handling for the given pin
+ *
+ * @param pin Pin to have IRQ handling set
+ *
+ * @return 1 if there was an ISR flag. 0 if there wasn't.
+ */
+int GPIO_irq_handling(uint8_t pin) {
+  // Clear ISR flag
+  if (EXTI->PR & (1 << pin)) {
+    EXTI->PR |= (1 << pin);
+    return 1;
+  }
+  return 0;
+}
