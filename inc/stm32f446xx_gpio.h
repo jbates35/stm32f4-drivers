@@ -13,6 +13,9 @@
 #define GPIO_CLOCK_ENABLE 1
 #define GPIO_CLOCK_DISABLE 0
 
+#define GPIO_INT_ENABLE 1
+#define GPIO_INT_DISABLE 0
+
 /**
  * GPIO pin configuration structure
  * @GPIO_pin_number: the pin associated with the particular port (i.e. 5 if PE5)
