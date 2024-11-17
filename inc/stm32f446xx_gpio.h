@@ -85,11 +85,11 @@ void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x);
 /*
  * Data read and write
  */
-uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, const uint8_t pin);
-uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x);
-void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val);
-void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val);
-void GPIO_toggle_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin);
+uint8_t GPIO_get_input(const GPIO_TypeDef *p_GPIO_x, const uint8_t pin);
+uint16_t GPIO_get_input_port(const GPIO_TypeDef *p_GPIO_x);
+void GPIO_set_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val);
+void GPIO_set_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val);
+void GPIO_toggle_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin);
 
 /*
  * IRQ configuration and IRQ handling

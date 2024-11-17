@@ -131,7 +131,7 @@ void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x) {
  * @param pin Pin to be read
  * @return uint8_t Value of the input associated with the pin
  */
-uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
+uint8_t GPIO_get_input(const GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
   if (p_GPIO_x == NULL) return 0;
 
   return (p_GPIO_x->IDR >> pin) & 0x1;
@@ -143,7 +143,7 @@ uint8_t GPIO_read_from_input_pin(const GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
  * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @return uint16_t Word containing the value of the GPIO port
  */
-uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x) {
+uint16_t GPIO_get_input_port(const GPIO_TypeDef *p_GPIO_x) {
   if (p_GPIO_x == NULL) return 0;
 
   return (uint16_t)p_GPIO_x->IDR;
@@ -156,7 +156,7 @@ uint16_t GPIO_read_from_input_port(const GPIO_TypeDef *p_GPIO_x) {
  * @param pin Pin which will be read
  * @param val Output value - 1 for high, 0 for low
  */
-void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) {
+void GPIO_set_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) {
   if (p_GPIO_x == NULL) return;
 
   if (val)
@@ -174,7 +174,7 @@ void GPIO_write_to_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) 
  * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param val Word containing the value to be written to the GPIO port
  */
-void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
+void GPIO_set_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
   if (p_GPIO_x == NULL) return;
 
   // Set logic
@@ -192,7 +192,7 @@ void GPIO_write_to_output_port(GPIO_TypeDef *p_GPIO_x, uint16_t val) {
  * @param p_GPIO_x GPIO base address (and overlaid struct)
  * @param pin Pin to be toggled
  */
-void GPIO_toggle_output_pin(GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
+void GPIO_toggle_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin) {
   if (p_GPIO_x == NULL) return;
 
   uint8_t val = (p_GPIO_x->ODR) & (1 << pin);
