@@ -20,6 +20,8 @@
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
+#define CHANNEL_CONFIGS(cfg) {&cfg->channel_1, &cfg->channel_2, &cfg->channel_3, &cfg->channel_4}
+
 int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state) {
   if (base_addr == NULL) return -1;
 
@@ -61,33 +63,36 @@ int timer_init(const TimerHandle_t *timer_handle) {
   // For easier indexing of addresses
   volatile uint32_t *ccr_reg[] = TIMERS_CCR_REGS(timer);
   volatile uint32_t *ccmr_reg[] = TIMERS_CCMR_REGS(timer);
+  const TimerConfigChannel_t *channel_cfg[] = CHANNEL_CONFIGS(cfg);
 
   // Configure channel specific attributes
-  for (int i = 0; i < cfg->channel_count && i < sizeof(ccr_reg) / sizeof(ccr_reg[0]); i++) {
+  for (int i = 0; i < cfg->channel_count && i < 4; i++) {
     // Reset the bits for output mode so it can be set by the following
     *ccmr_reg[i] &= ~(0b111 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
 
     // Configure the output mode accordingly
-    if (cfg->channel_mode[i] == TIMER_CHANNEL_MODE_COMPARE) {
-    } else if (cfg->channel_mode[i] == TIMER_CHANNEL_MODE_CAPTURE) {
-    } else if (cfg->channel_mode[i] == TIMER_CHANNEL_MODE_PWM_HI) {
+    uint8_t channel_mode = channel_cfg[i]->channel_mode;
+    if (channel_mode == TIMER_CHANNEL_MODE_COMPARE) {
+    } else if (channel_mode == TIMER_CHANNEL_MODE_CAPTURE) {
+    } else if (channel_mode == TIMER_CHANNEL_MODE_PWM_HI) {
       *ccmr_reg[i] |= (0b110 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
-    } else if (cfg->channel_mode[i] == TIMER_CHANNEL_MODE_PWM_LO) {
+    } else if (channel_mode == TIMER_CHANNEL_MODE_PWM_LO) {
       *ccmr_reg[i] |= (0b111 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
     }
 
     // Enable or disable the forwarding of the pin information to the GPIO pin
-    if (cfg->gpio_en[i] == TIMER_GPIO_ENABLE)
+    uint8_t gpio_en = channel_cfg[i]->gpio_en;
+    if (gpio_en == TIMER_GPIO_ENABLE)
       timer->CCER |= (1 << (TIM_CCER_CC1E_Pos + (4 * i)));
     else
       timer->CCER &= ~(1 << (TIM_CCER_CC1E_Pos + (4 * i)));
 
     // Load the times when interrupts happen
-    *ccr_reg[i] = cfg->ccr[i];
+    *ccr_reg[i] = channel_cfg[i]->ccr;
 
     // Set interrupt if required
     timer->DIER &= ~(1 << (TIM_DIER_CC1IE_Pos + i));
-    if (cfg->interrupt_en[i] == TIMER_INTERRUPT_ENABLE) timer->DIER |= (1 << (TIM_DIER_CC1IE_Pos + i));
+    if (channel_cfg[i]->interrupt_en == TIMER_INTERRUPT_ENABLE) timer->DIER |= (1 << (TIM_DIER_CC1IE_Pos + i));
   }
 
   // Lastly, enable the timer
