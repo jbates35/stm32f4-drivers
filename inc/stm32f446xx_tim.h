@@ -2,26 +2,47 @@
 
 #include "stm32f446xx.h"
 
+typedef enum {
+  TIMER_CHANNEL_MODE_COMPARE = 0,
+  TIMER_CHANNEL_MODE_CAPTURE,
+  TIMER_CHANNEL_MODE_PWM_HI,
+  TIMER_CHANNEL_MODE_PWM_LO
+} TimChanMode_t;
+typedef enum { TIMER_INTERRUPT_DISABLE = 0, TIMER_INTERRUPT_ENABLE } TimInterruptEn_t;
+typedef enum { TIMER_IRQ_DISABLE = 0, TIMER_IRQ_ENABLE } TimIRQ_t;
+typedef enum { TIMER_PERI_CLOCK_DISABLE = 0, TIMER_PERI_CLOCK_ENABLE } TimPeriEn_t;
+typedef enum { TIMER_GPIO_DISABLE = 0, TIMER_GPIO_ENABLE } TimGPIOEn_t;
+typedef enum { TIMER_DIR_UP = 0, TIMER_DIR_DOWN } TimDir_t;
+typedef enum {
+  TIMER_INPUT_FILTER_NONE = 0,
+  TIMER_INPUT_FILTER_SLOW,
+  TIMER_INPUT_FILTER_MEDIUM,
+  TIMER_INPUT_FILTER_FAST
+} TimInputFilter_t;
+
 /**
   * Channel specific configuration struct
   * @gpio_en: Whether the associated GPIO should be set up to follow the timer. Necessary for PWM and Input capture
   * @interrupt_en: Whether the interrupt is enabled or not
   * @channel_mode: Whether the channel should be set to compare, input capture, or pwm
-  * @ccr: The ccr vals to be set, which dictate when the interrupts happen
+  * @input_filter: Allow for either no filtering, slow medium or fast filtering  NOTE: Not implemented yet
+  * @ccr: The ccr vals to be set (when on output or pwm mode), which dictate when the interrupts happen
   * NOTE: NOT meant to be used outside of the TimerConfig_t struct
 **/
 typedef struct {
-  uint8_t gpio_en;
-  uint8_t interrupt_en;
-  uint8_t channel_mode;
+  TimGPIOEn_t gpio_en;
+  TimInterruptEn_t interrupt_en;
+  TimChanMode_t channel_mode;
+  TimInputFilter_t input_filter;
   uint16_t ccr;
-} TimerConfigChannel_t;
+} TimerChannelConfig_t;
 
 /**
   * Timer configuration struct
   * @arr: The auto reset reload register for the timer
   * @prescaler: Pre-scalar to run the timer through (actual_freq = base_freq/(psc+1))
-  * @dir: Whether up counting or down counting
+  * @clock_divider: Before pre-scaling, this value will either divide the clock /1->00, /2->01, /4->10, 11 not allowed
+  * @direction: Whether up counting or down counting
   * @channel_count: The number of channels to init (TIM1-5, and 8 have 4 timers, others have 2 timers)
   * @channel_1: Timer channel 1 specific configuration
   * @channel_2: Timer channel 2 specific configuration
@@ -33,12 +54,13 @@ typedef struct {
 typedef struct {
   uint16_t arr;
   uint16_t prescaler;
-  uint8_t dir;
+  uint8_t clock_divider;
+  TimDir_t direction;
   uint8_t channel_count;
-  TimerConfigChannel_t channel_1;
-  TimerConfigChannel_t channel_2;
-  TimerConfigChannel_t channel_3;
-  TimerConfigChannel_t channel_4;
+  TimerChannelConfig_t channel_1;
+  TimerChannelConfig_t channel_2;
+  TimerChannelConfig_t channel_3;
+  TimerChannelConfig_t channel_4;
 } TimerConfig_t;
 
 /**
@@ -51,18 +73,6 @@ typedef struct {
   TIM_TypeDef *p_base_addr;
   TimerConfig_t cfg;
 } TimerHandle_t;
-
-enum {
-  TIMER_CHANNEL_MODE_COMPARE = 0,
-  TIMER_CHANNEL_MODE_CAPTURE = 1,
-  TIMER_CHANNEL_MODE_PWM_HI = 2,
-  TIMER_CHANNEL_MODE_PWM_LO = 3
-};
-enum { TIMER_INTERRUPT_DISABLE = 0, TIMER_INTERRUPT_ENABLE = 1 };
-enum { TIMER_IRQ_DISABLE = 0, TIMER_IRQ_ENABLE = 1 };
-enum { TIMER_PERI_CLOCK_DISABLE = 0, TIMER_PERI_CLOCK_ENABLE = 1 };
-enum { TIMER_GPIO_DISABLE = 0, TIMER_GPIO_ENABLE = 1 };
-enum { TIMER_DIR_UP = 0, TIMER_DIR_DOWN = 1 };
 
 int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state);
 

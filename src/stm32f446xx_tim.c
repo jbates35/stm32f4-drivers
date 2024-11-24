@@ -14,8 +14,8 @@
       RCC_APB1ENR_TIM13EN_Pos, RCC_APB1ENR_TIM14EN_Pos,                                                   \
   }
 
-#define TIMERS_CCR_REGS(timer) {&timer->CCR1, &timer->CCR2, &timer->CCR3, &timer->CCR4}
-#define TIMERS_CCMR_REGS(timer) {&timer->CCMR1, &timer->CCMR1, &timer->CCMR2, &timer->CCMR2}
+#define TIMER_CCR_REGS(timer) {&timer->CCR1, &timer->CCR2, &timer->CCR3, &timer->CCR4}
+#define TIMER_CCMR_REGS(timer) {&timer->CCMR1, &timer->CCMR1, &timer->CCMR2, &timer->CCMR2}
 
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
@@ -51,19 +51,21 @@ int timer_init(const TimerHandle_t *timer_handle) {
   const TimerConfig_t *cfg = &(timer_handle->cfg);
 
   // Set the frequency of the timer
+  timer->CR1 &= ~(0b11 << TIM_CR1_CKD_Pos);
+  timer->CR1 |= ((cfg->clock_divider & 0b11) << TIM_CR1_CKD_Pos);
   timer->PSC = cfg->prescaler;
   timer->ARR = cfg->arr;
 
   // Set direction of the timer
-  if (cfg->dir == TIMER_DIR_UP)
+  if (cfg->direction == TIMER_DIR_UP)
     timer->CR1 &= ~(1 << TIM_CR1_DIR);
-  else if (cfg->dir == TIMER_DIR_DOWN)
+  else if (cfg->direction == TIMER_DIR_DOWN)
     timer->CR1 |= (1 << TIM_CR1_DIR);
 
   // For easier indexing of addresses
-  volatile uint32_t *ccr_reg[] = TIMERS_CCR_REGS(timer);
-  volatile uint32_t *ccmr_reg[] = TIMERS_CCMR_REGS(timer);
-  const TimerConfigChannel_t *channel_cfg[] = CHANNEL_CONFIGS(cfg);
+  volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
+  volatile uint32_t *ccmr_reg[] = TIMER_CCMR_REGS(timer);
+  const TimerChannelConfig_t *channel_cfg[] = CHANNEL_CONFIGS(cfg);
 
   // Configure channel specific attributes
   for (int i = 0; i < cfg->channel_count && i < 4; i++) {
@@ -71,7 +73,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
     *ccmr_reg[i] &= ~(0b111 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
 
     // Configure the output mode accordingly
-    uint8_t channel_mode = channel_cfg[i]->channel_mode;
+    TimChanMode_t channel_mode = channel_cfg[i]->channel_mode;
     if (channel_mode == TIMER_CHANNEL_MODE_COMPARE) {
     } else if (channel_mode == TIMER_CHANNEL_MODE_CAPTURE) {
     } else if (channel_mode == TIMER_CHANNEL_MODE_PWM_HI) {
@@ -81,7 +83,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
     }
 
     // Enable or disable the forwarding of the pin information to the GPIO pin
-    uint8_t gpio_en = channel_cfg[i]->gpio_en;
+    TimGPIOEn_t gpio_en = channel_cfg[i]->gpio_en;
     if (gpio_en == TIMER_GPIO_ENABLE)
       timer->CCER |= (1 << (TIM_CCER_CC1E_Pos + (4 * i)));
     else
@@ -105,7 +107,7 @@ int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
   if (timer == NULL) return -1;  // Error: null pointer
 
   // Grab the correct CCR register so we can load the pwm value in
-  volatile uint32_t *ccr_reg[] = TIMERS_CCR_REGS(timer);
+  volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
 
   // Ensure the value of channel is valid
   if (channel == 0 || channel > SIZEOF(ccr_reg)) return -2;  // Error: invalid channel
