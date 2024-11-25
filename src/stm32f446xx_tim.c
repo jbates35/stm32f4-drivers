@@ -50,9 +50,16 @@ int timer_init(const TimerHandle_t *timer_handle) {
   TIM_TypeDef *timer = (timer_handle->p_base_addr);
   const TimerConfig_t *cfg = &(timer_handle->cfg);
 
+  // Get the bits that match the clock divider enum
+  uint8_t clock_divider = 0b00;
+  if (cfg->clock_divider == TIMER_CLOCK_DIVIDE_2)
+    clock_divider = 0b01;
+  else if (cfg->clock_divider == TIMER_CLOCK_DIVIDE_4)
+    clock_divider = 0b10;
+
   // Set the frequency of the timer
   timer->CR1 &= ~(0b11 << TIM_CR1_CKD_Pos);
-  timer->CR1 |= ((cfg->clock_divider & 0b11) << TIM_CR1_CKD_Pos);
+  timer->CR1 |= (clock_divider << TIM_CR1_CKD_Pos);
   timer->PSC = cfg->prescaler;
   timer->ARR = cfg->arr;
 

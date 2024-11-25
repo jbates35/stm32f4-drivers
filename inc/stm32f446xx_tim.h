@@ -8,17 +8,23 @@ typedef enum {
   TIMER_CHANNEL_MODE_PWM_HI,
   TIMER_CHANNEL_MODE_PWM_LO
 } TimChanMode_t;
+typedef enum { TIMER_CLOCK_DIVIDE_1 = 0, TIMER_CLOCK_DIVIDE_2, TIMER_CLOCK_DIVIDE_4 } TimClockDivider_t;
 typedef enum { TIMER_INTERRUPT_DISABLE = 0, TIMER_INTERRUPT_ENABLE } TimInterruptEn_t;
 typedef enum { TIMER_IRQ_DISABLE = 0, TIMER_IRQ_ENABLE } TimIRQ_t;
 typedef enum { TIMER_PERI_CLOCK_DISABLE = 0, TIMER_PERI_CLOCK_ENABLE } TimPeriEn_t;
 typedef enum { TIMER_GPIO_DISABLE = 0, TIMER_GPIO_ENABLE } TimGPIOEn_t;
 typedef enum { TIMER_DIR_UP = 0, TIMER_DIR_DOWN } TimDir_t;
 typedef enum {
-  TIMER_INPUT_FILTER_NONE = 0,
-  TIMER_INPUT_FILTER_SLOW,
-  TIMER_INPUT_FILTER_MEDIUM,
-  TIMER_INPUT_FILTER_FAST
-} TimInputFilter_t;
+  TIMER_CAPTURE_FILTER_NONE = 0,
+  TIMER_CAPTURE_FILTER_SLOW,
+  TIMER_CAPTURE_FILTER_MEDIUM,
+  TIMER_CAPTURE_FILTER_FAST
+} TimCaptureFilter_t;
+typedef enum {
+  TIMER_CAPTURE_RISING_EDGE = 0,
+  TIMER_CAPTURE_FALLING_EDGE,
+  TIMER_CAPTURE_BOTH_EDGE,
+} TimCaptureEdgeSel_t;
 
 /**
   * Channel specific configuration struct
@@ -33,7 +39,8 @@ typedef struct {
   TimGPIOEn_t gpio_en;
   TimInterruptEn_t interrupt_en;
   TimChanMode_t channel_mode;
-  TimInputFilter_t input_filter;
+  TimCaptureFilter_t capture_input_filter;
+  TimCaptureEdgeSel_t capture_edge;
   uint16_t ccr;
 } TimerChannelConfig_t;
 
@@ -54,7 +61,7 @@ typedef struct {
 typedef struct {
   uint16_t arr;
   uint16_t prescaler;
-  uint8_t clock_divider;
+  TimClockDivider_t clock_divider;
   TimDir_t direction;
   uint8_t channel_count;
   TimerChannelConfig_t channel_1;
