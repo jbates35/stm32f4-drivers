@@ -44,7 +44,7 @@ void GPIO_init(const GPIO_Handle_t *p_GPIO_handle) {
 
   // For easy bit-shifting, dshift is 2*pin number, whereas sshift is just
   // pin_number
-  const uint8_t qshift = (4 * cfg->GPIO_pin_number);
+  const uint8_t qshift = 4 * cfg->GPIO_pin_number;
   const uint8_t dshift = 2 * cfg->GPIO_pin_number;
   const uint8_t sshift = cfg->GPIO_pin_number;
 
