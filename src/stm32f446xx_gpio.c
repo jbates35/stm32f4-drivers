@@ -159,7 +159,7 @@ uint16_t GPIO_get_input_port(const GPIO_TypeDef *p_GPIO_x) {
 void GPIO_set_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin, uint8_t val) {
   if (p_GPIO_x == NULL) return;
 
-  if (val)
+  if (!val)
     // Reset pin from  1 to 0
     p_GPIO_x->BSRR |= (1 << pin << 16);
   else
