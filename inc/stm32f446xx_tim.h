@@ -7,24 +7,24 @@ typedef enum {
   TIMER_CHANNEL_MODE_CAPTURE,
   TIMER_CHANNEL_MODE_PWM_HI,
   TIMER_CHANNEL_MODE_PWM_LO
-} TimChanMode_t;
-typedef enum { TIMER_CLOCK_DIVIDE_1 = 0, TIMER_CLOCK_DIVIDE_2, TIMER_CLOCK_DIVIDE_4 } TimClockDivider_t;
-typedef enum { TIMER_INTERRUPT_DISABLE = 0, TIMER_INTERRUPT_ENABLE } TimInterruptEn_t;
+} TimerChanMode_t;
+typedef enum { TIMER_CLOCK_DIVIDE_1 = 0, TIMER_CLOCK_DIVIDE_2, TIMER_CLOCK_DIVIDE_4 } TimerClockDivider_t;
+typedef enum { TIMER_INTERRUPT_DISABLE = 0, TIMER_INTERRUPT_ENABLE } TimerInterruptEn_t;
 typedef enum { TIMER_IRQ_DISABLE = 0, TIMER_IRQ_ENABLE } TimIRQ_t;
 typedef enum { TIMER_PERI_CLOCK_DISABLE = 0, TIMER_PERI_CLOCK_ENABLE } TimPeriEn_t;
-typedef enum { TIMER_GPIO_DISABLE = 0, TIMER_GPIO_ENABLE } TimGPIOEn_t;
-typedef enum { TIMER_DIR_UP = 0, TIMER_DIR_DOWN } TimDir_t;
+typedef enum { TIMER_GPIO_DISABLE = 0, TIMER_GPIO_ENABLE } TimerGPIOEn_t;
+typedef enum { TIMER_DIR_UP = 0, TIMER_DIR_DOWN } TimerDir_t;
 typedef enum {
   TIMER_CAPTURE_FILTER_NONE = 0,
   TIMER_CAPTURE_FILTER_SLOW,
   TIMER_CAPTURE_FILTER_MEDIUM,
   TIMER_CAPTURE_FILTER_FAST
-} TimCaptureFilter_t;
+} TimerCaptureFilter_t;
 typedef enum {
   TIMER_CAPTURE_RISING_EDGE = 0,
   TIMER_CAPTURE_FALLING_EDGE,
   TIMER_CAPTURE_BOTH_EDGE,
-} TimCaptureEdgeSel_t;
+} TimerCaptureEdgeSel_t;
 
 /**
   * Channel specific configuration struct
@@ -36,11 +36,11 @@ typedef enum {
   * NOTE: NOT meant to be used outside of the TimerConfig_t struct
 **/
 typedef struct {
-  TimGPIOEn_t gpio_en;
-  TimInterruptEn_t interrupt_en;
-  TimChanMode_t channel_mode;
-  TimCaptureFilter_t capture_input_filter;
-  TimCaptureEdgeSel_t capture_edge;
+  TimerGPIOEn_t gpio_en;
+  TimerInterruptEn_t interrupt_en;
+  TimerChanMode_t channel_mode;
+  TimerCaptureFilter_t capture_input_filter;
+  TimerCaptureEdgeSel_t capture_edge;
   uint16_t ccr;
 } TimerChannelConfig_t;
 
@@ -61,8 +61,8 @@ typedef struct {
 typedef struct {
   uint16_t arr;
   uint16_t prescaler;
-  TimClockDivider_t clock_divider;
-  TimDir_t direction;
+  TimerClockDivider_t clock_divider;
+  TimerDir_t direction;
   uint8_t channel_count;
   TimerChannelConfig_t channel_1;
   TimerChannelConfig_t channel_2;
