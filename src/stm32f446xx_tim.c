@@ -99,7 +99,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
       // Program the input filter duration
       TimerCaptureFilter_t filter_len = channel_cfg[i]->capture_input_filter;
-      *ccmr_reg[i] &= ~(0b1111 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
+      *ccmr_reg[i] &= ~(0b1111 << ((TIM_CCMR1_IC1F_Pos + i * 8) % 16));
       uint8_t filter_val = 0b0000;
       if (filter_len == TIMER_CAPTURE_FILTER_FAST)
         filter_val = 0b0010;
@@ -174,13 +174,15 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
   return timer_set_pwm(timer, channel, pwm_val);
 }
 
-uint16_t timer_get_tick_count(const TIM_TypeDef *timer, const uint8_t channel) {
+uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel) {
   if (timer == NULL) return -1;  // Error: null pointer
 
   // Grab the correct CCR register so we can load the pwm value in
   const volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
   return *ccr_reg[channel - 1];
 }
+
+uint16_t timer_get_period_ticks(const TIM_TypeDef *timer, const uint8_t channel) { return timer->ARR; }
 
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state) {
   // Enables or disables NVIC
