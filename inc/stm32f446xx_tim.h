@@ -87,7 +87,7 @@ int timer_init(const TimerHandle_t *timer_handle);
 int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val);
 int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float pct);
 uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel);
-uint16_t timer_get_period_ticks(const TIM_TypeDef *timer, const uint8_t channel);
+uint16_t timer_get_period_ticks(const TIM_TypeDef *timer);
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state);
 void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_priority);
 int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel);

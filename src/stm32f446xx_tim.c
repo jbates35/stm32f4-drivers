@@ -182,7 +182,7 @@ uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel
   return *ccr_reg[channel - 1];
 }
 
-uint16_t timer_get_period_ticks(const TIM_TypeDef *timer, const uint8_t channel) { return timer->ARR; }
+uint16_t timer_get_period_ticks(const TIM_TypeDef *timer) { return timer->ARR; }
 
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state) {
   // Enables or disables NVIC
