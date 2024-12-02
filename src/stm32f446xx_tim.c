@@ -80,17 +80,55 @@ int timer_init(const TimerHandle_t *timer_handle) {
     *ccmr_reg[i] &= ~(0b111 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
 
     // Configure the output mode accordingly
-    TimChanMode_t channel_mode = channel_cfg[i]->channel_mode;
+    TimerChanMode_t channel_mode = channel_cfg[i]->channel_mode;
     if (channel_mode == TIMER_CHANNEL_MODE_COMPARE) {
+      // Ensure the timer is set to output capture mode
+      *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
+
+      ///// NOTE: Going to assume we want the gpio to toggle if in output mode
+      ///// But we might want a separate set of enums to dictate what we want here
+      *ccmr_reg[i] &= ~(0b111 << ((TIM_CCMR1_OC1M_Pos + i * 8) % 16));
+      *ccmr_reg[i] |= (0b011 << ((TIM_CCMR1_OC1M_Pos + i * 8) % 16));
+
+      ///// NOTE: If pre-load is enabled, it should go here
+
     } else if (channel_mode == TIMER_CHANNEL_MODE_CAPTURE) {
+      // Change the timer to input capture mode
+      *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
+      *ccmr_reg[i] |= (0b01 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
+
+      // Program the input filter duration
+      TimerCaptureFilter_t filter_len = channel_cfg[i]->capture_input_filter;
+      *ccmr_reg[i] &= ~(0b1111 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
+      uint8_t filter_val = 0b0000;
+      if (filter_len == TIMER_CAPTURE_FILTER_FAST)
+        filter_val = 0b0010;
+      else if (filter_len == TIMER_CAPTURE_FILTER_MEDIUM)
+        filter_val = 0b1001;
+      else if (filter_len == TIMER_CAPTURE_FILTER_SLOW)
+        filter_val = 0b1111;
+      *ccmr_reg[i] |= (filter_val << ((TIM_CCMR1_IC1F_Pos + i * 8) % 16));
+
+      // Select the active edge - 101 is both edges, 001 is falling edge, 000 is rising edge
+      TimerCaptureEdgeSel_t edge_sel = channel_cfg[i]->capture_edge;
+      timer->CCER &= ~(0b111 << (TIM_CCER_CC1P_Pos + i * 4));
+      uint8_t edge_val = 0b000;
+      if (edge_sel == TIMER_CAPTURE_FALLING_EDGE)
+        edge_val = 0b001;
+      else if (edge_sel == TIMER_CAPTURE_BOTH_EDGE)
+        edge_val = 0b101;
+      timer->CCER |= (edge_val << (TIM_CCER_CC1P_Pos + i * 4));
+
+      ///// NOTE: This is where the capture prescaler would go in, if we should be putting it in
+
     } else if (channel_mode == TIMER_CHANNEL_MODE_PWM_HI) {
-      *ccmr_reg[i] |= (0b110 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
+      *ccmr_reg[i] |= ((0b110 << (TIM_CCMR1_OC1M_Pos + i * 8) % 16));
     } else if (channel_mode == TIMER_CHANNEL_MODE_PWM_LO) {
-      *ccmr_reg[i] |= (0b111 << (TIM_CCMR1_OC1M_Pos + (i * 8) % 16));
+      *ccmr_reg[i] |= ((0b111 << (TIM_CCMR1_OC1M_Pos + i * 8) % 16));
     }
 
     // Enable or disable the forwarding of the pin information to the GPIO pin
-    TimGPIOEn_t gpio_en = channel_cfg[i]->gpio_en;
+    TimerGPIOEn_t gpio_en = channel_cfg[i]->gpio_en;
     if (gpio_en == TIMER_GPIO_ENABLE)
       timer->CCER |= (1 << (TIM_CCER_CC1E_Pos + (4 * i)));
     else
