@@ -136,6 +136,14 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
   return timer_set_pwm(timer, channel, pwm_val);
 }
 
+uint16_t timer_get_tick_count(const TIM_TypeDef *timer, const uint8_t channel) {
+  if (timer == NULL) return -1;  // Error: null pointer
+
+  // Grab the correct CCR register so we can load the pwm value in
+  const volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
+  return *ccr_reg[channel - 1];
+}
+
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state) {
   // Enables or disables NVIC
   // Programs ISER if enable, programs ICER if disable
