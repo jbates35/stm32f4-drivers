@@ -68,7 +68,7 @@ typedef struct {
 } GPIO_PinConfig_t;
 
 typedef struct {
-  GPIO_TypeDef *p_GPIO_x;            // Holds the base address of the GPIO port which the pin belongs
+  GPIO_TypeDef *p_GPIO_addr;         // Holds the base address of the GPIO port which the pin belongs
   GPIO_PinConfig_t GPIO_pin_config;  // Holds the GPIO pin configuration settings
 } GPIO_Handle_t;
 
