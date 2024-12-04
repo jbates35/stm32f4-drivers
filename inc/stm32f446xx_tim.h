@@ -1,3 +1,6 @@
+#ifndef INC_STM34F446XX_TIMER_H_
+#define INC_STM34F446XX_TIMER_H_
+
 #include <stdint.h>
 
 #include "stm32f446xx.h"
@@ -177,3 +180,5 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
  * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
  */
 int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel);
+
+#endif
