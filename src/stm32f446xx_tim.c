@@ -22,6 +22,16 @@
 
 #define CHANNEL_CONFIGS(cfg) {&cfg->channel_1, &cfg->channel_2, &cfg->channel_3, &cfg->channel_4}
 
+/**
+ * @brief  Controls the peripheral clock for a given timer.
+ * 
+ * This function enables or disables the peripheral clock for the specified timer.
+ * 
+ * @param  base_addr: Base address of the timer.
+ * @param  en_state: Enable state (1 to enable, 0 to disable).
+ * 
+ * @retval 0 on success, -1 on failure (e.g., if base_addr is NULL or out of range).
+ */
 int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state) {
   if (base_addr == NULL) return -1;
 
@@ -43,6 +53,16 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
   return 0;
 }
 
+/**
+ * @brief  Initializes the timer with the specified configuration.
+ * 
+ * This function sets up the timer based on the provided configuration in the TimerHandle_t structure.
+ * It configures the clock divider, prescaler, auto-reload register, direction, and channel-specific settings.
+ * 
+ * @param  timer_handle: Pointer to the TimerHandle_t structure containing the timer base address and configuration.
+ * 
+ * @retval 0 on success, -1 if the timer_handle is NULL.
+ */
 int timer_init(const TimerHandle_t *timer_handle) {
   if (timer_handle == NULL) return -1;
 
@@ -148,6 +168,20 @@ int timer_init(const TimerHandle_t *timer_handle) {
   return 0;
 }
 
+/**
+ * @brief  Sets the PWM value for a specified timer channel.
+ * 
+ * This function sets the PWM value for a given timer channel by writing
+ * the value to the appropriate Capture/Compare Register (CCR).
+ * 
+ * @param  timer   Pointer to the TIM_TypeDef structure that contains
+ *                 the configuration information for the specified timer.
+ * @param  channel The timer channel to set the PWM value for (1 to 4).
+ * @param  pwm_val The PWM value to set.
+ * 
+ * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
+ *                 -2 if the channel is invalid.
+ */
 int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
   if (timer == NULL) return -1;  // Error: null pointer
 
@@ -164,6 +198,19 @@ int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
   return 0;
 }
 
+/**
+ * @brief  Sets the PWM duty cycle percentage for a specified timer channel.
+ * 
+ * This function calculates the PWM value based on the percentage provided
+ * and sets it for the specified timer channel.
+ * 
+ * @param  timer   Pointer to the TIM_TypeDef structure that contains
+ *                 the configuration information for the specified timer.
+ * @param  channel The timer channel to set the PWM value for.
+ * @param  pct     The desired PWM duty cycle percentage (0.0 to 100.0).
+ * 
+ * @retval int     Returns 0 on success, -1 if the timer pointer is NULL.
+ */
 int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float pct) {
   if (timer == NULL) return -1;
 
@@ -174,6 +221,13 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
   return timer_set_pwm(timer, channel, pwm_val);
 }
 
+/**
+ * @brief Get the current timer ticks for a specific channel.
+ * 
+ * @param timer Pointer to the TIM_TypeDef structure.
+ * @param channel Timer channel number.
+ * @return uint16_t Current timer ticks.
+ */
 uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel) {
   if (timer == NULL) return -1;  // Error: null pointer
 
@@ -182,8 +236,20 @@ uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel
   return *ccr_reg[channel - 1];
 }
 
+/**
+ * @brief Get the period ticks of the timer.
+ * 
+ * @param timer Pointer to the TIM_TypeDef structure.
+ * @return uint16_t Timer period ticks.
+ */
 uint16_t timer_get_period_ticks(const TIM_TypeDef *timer) { return timer->ARR; }
 
+/**
+ * @brief Configure the timer IRQ interrupt.
+ * 
+ * @param irq_number IRQ number.
+ * @param en_state Enable or disable state.
+ */
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state) {
   // Enables or disables NVIC
   // Programs ISER if enable, programs ICER if disable
@@ -193,6 +259,12 @@ void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state
     NVIC->ICER[irq_number / 32] |= (1 << (irq_number % 32));
 }
 
+/**
+ * @brief Configure the priority of the timer IRQ.
+ * 
+ * @param irq_number IRQ number.
+ * @param irq_priority IRQ priority.
+ */
 void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_priority) {
   uint8_t qshift = (irq_number * 8) % 32;  // Will result in bits 0 - 240*8
   uint8_t qindex = (irq_number * 8) / 32;
@@ -201,6 +273,13 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
   NVIC->IP[qindex] |= (irq_priority << qshift << 4) & (0xF0 << qshift);
 }
 
+/**
+ * @brief Handle the timer IRQ.
+ * 
+ * @param timer Pointer to the TIM_TypeDef structure.
+ * @param channel Timer channel number.
+ * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
+ */
 int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel) {
   if (timer == NULL) return 0;  // Error: null pointer
 
