@@ -5,8 +5,8 @@
  *      Author: jbates
  */
 
-#ifndef INC_STM32H723XX_GPIO_H_
-#define INC_STM32H723XX_GPIO_H_
+#ifndef INC_STM32F446XX_GPIO_H_
+#define INC_STM32F446XX_GPIO_H_
 
 #include "stm32f446xx.h"
 
