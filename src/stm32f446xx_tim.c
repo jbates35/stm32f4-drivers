@@ -228,6 +228,7 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
  * @param channel Timer channel number.
  * @return uint16_t Current timer ticks.
  */
+// TODO: Make this function (and a couple others) static inline and defined in the .h file
 uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel) {
   if (timer == NULL) return -1;  // Error: null pointer
 
