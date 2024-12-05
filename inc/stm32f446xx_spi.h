@@ -20,7 +20,7 @@ typedef struct {
   SPI_Config_t cfg;
 } SPI_Handle_t;
 
-int spi_peri_clock_en(const SPI_TypeDef *p_spi_addr, const uint8_t en);
+int spi_peri_clock_control(const SPI_TypeDef *p_spi_addr, const uint8_t en);
 
 int spi_init(const SPI_Handle_t *p_spi_handle);
 
