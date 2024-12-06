@@ -34,13 +34,13 @@ void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const uint8_t en_s
  * Initialize a GPIO pin
 +* @param p_GPIO_handle The handle type as defined in the gpio.h file which describes both the base address and the required configuration
  */
-void GPIO_init(const GPIO_Handle_t *p_GPIO_handle) {
+void GPIO_init(const GPIOHandle_t *p_GPIO_handle) {
   if (p_GPIO_handle == NULL) return;
 
   // Create pointers to the GPIO port and the pin configuration for easier
   // access/readability
   GPIO_TypeDef *gpiox = p_GPIO_handle->p_GPIO_addr;
-  const GPIO_PinConfig_t *cfg = &(p_GPIO_handle->GPIO_pin_config);
+  const GPIOConfig_t *cfg = &(p_GPIO_handle->GPIO_pin_config);
 
   // For easy bit-shifting, dshift is 2*pin number, whereas sshift is just
   // pin_number

@@ -6,7 +6,7 @@
 #include "stm32f446xx.h"
 
 // SPI Master vs slave mode select:
-typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SpiDeviceMode_t;
+typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SPIDeviceMode_t;
 
 // Bus configuration (simplex duplex etc)
 typedef enum {
@@ -14,7 +14,7 @@ typedef enum {
   SPI_BUS_CONFIG_SIMPLEX_TX_ONLY,
   SPI_BUS_CONFIG_SIMPLEX_RX_ONLY,
   SPI_BUS_CONFIG_HALF_DUPLEX
-} SpiBusConfig_t;
+} SPIBusConfig_t;
 
 // Data frame format (i.e. 4-bit frames, 8-bit frames, etc)
 typedef enum {
@@ -23,16 +23,16 @@ typedef enum {
   SPI_DFF_16_BIT = 0xf,
   SPI_DFF_24_BIT = 0x17,
   SPI_DFF_32_BIT = 0x1f
-} SpiDff_t;
+} SPIDff_t;
 
 // Clock phase angle (i.e. if cpol is active high, first edge = rising edge, second edge = falling edge)
-typedef enum { SPI_CPHA_CAPTURE_FIRST_EDGE = 0, SPI_CPHA_CAPTURE_SECOND_EDGE } SpiCpha_t;
+typedef enum { SPI_CPHA_CAPTURE_FIRST_EDGE = 0, SPI_CPHA_CAPTURE_SECOND_EDGE } SPICpha_t;
 
 // Clock polarity (does it start with a low or a high? Used with clock phase to dictate rising edge of acctive edge)
-typedef enum { SPI_CPOL_CAPTURE_ACTIVE_HIGH = 0, SPI_CPOL_CAPTURE_ACTIVE_LOW } SpiCpol_t;
+typedef enum { SPI_CPOL_CAPTURE_ACTIVE_HIGH = 0, SPI_CPOL_CAPTURE_ACTIVE_LOW } SPICpol_t;
 
 // Software slave management (enable or disable)
-typedef enum { SPI_SSM_DISABLE = 0, SPI_SSM_ENABLE } SpiSsm_t;
+typedef enum { SPI_SSM_DISABLE = 0, SPI_SSM_ENABLE } SPISsm_t;
 
 // Baud divisor (Dictates the speed of the spi bus)
 typedef enum {
@@ -44,7 +44,7 @@ typedef enum {
   SPI_BAUD_DIVISOR_64,
   SPI_BAUD_DIVISOR_128,
   SPI_BAUD_DIVISOR_256
-} SpiBaudDivisor_t;
+} SPIBaudDivisor_t;
 
 /**
  * @brief SPI configuration setup which is used to initiailize the SPI
@@ -58,14 +58,14 @@ typedef enum {
  * Speed - SPI clock speed based on divisors
  * */
 typedef struct {
-  SpiDeviceMode_t device_mode;
-  SpiBusConfig_t bus_config;
-  SpiDff_t dff;
-  SpiCpol_t cpol;
-  SpiCpha_t cpha;
-  SpiSsm_t ssm;
-  SpiBaudDivisor_t baud_divisor;
-} SPI_Config_t;
+  SPIDeviceMode_t device_mode;
+  SPIBusConfig_t bus_config;
+  SPIDff_t dff;
+  SPICpol_t cpol;
+  SPICpha_t cpha;
+  SPISsm_t ssm;
+  SPIBaudDivisor_t baud_divisor;
+} SPIConfig_t;
 
 /**
   * @brief Overall handler which is used in the init
@@ -74,12 +74,12 @@ typedef struct {
 **/
 typedef struct {
   SPI_TypeDef *p_spi_addr;
-  SPI_Config_t cfg;
-} SPI_Handle_t;
+  SPIConfig_t cfg;
+} SPIHandle_t;
 
 int spi_peri_clock_control(const SPI_TypeDef *p_spi_addr, const uint8_t en);
 
-int spi_init(const SPI_Handle_t *p_spi_handle);
+int spi_init(const SPIHandle_t *p_spi_handle);
 
 int spi_deinit(const SPI_TypeDef *p_spi_addr);
 

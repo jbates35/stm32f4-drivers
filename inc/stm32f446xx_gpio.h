@@ -65,12 +65,12 @@ typedef struct {
   GPIOPuPdRBit_t GPIO_pin_pupd_control;
   GPIOOpTypeBit_t GPIO_pin_out_type;
   uint8_t GPIO_pin_alt_func_mode;
-} GPIO_PinConfig_t;
+} GPIOConfig_t;
 
 typedef struct {
-  GPIO_TypeDef *p_GPIO_addr;         // Holds the base address of the GPIO port which the pin belongs
-  GPIO_PinConfig_t GPIO_pin_config;  // Holds the GPIO pin configuration settings
-} GPIO_Handle_t;
+  GPIO_TypeDef *p_GPIO_addr;     // Holds the base address of the GPIO port which the pin belongs
+  GPIOConfig_t GPIO_pin_config;  // Holds the GPIO pin configuration settings
+} GPIOHandle_t;
 
 /*
  * Peripheral clock setup
@@ -80,7 +80,7 @@ void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_x, const uint8_t en_stat
 /*
  * Init and de-init of GPIO
  */
-void GPIO_init(const GPIO_Handle_t *p_GPIO_handle);
+void GPIO_init(const GPIOHandle_t *p_GPIO_handle);
 void GPIO_deinit(const GPIO_TypeDef *p_GPIO_x);
 
 /*

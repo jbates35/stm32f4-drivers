@@ -31,7 +31,20 @@ int spi_peri_clock_control(const SPI_TypeDef *p_spi_addr, const uint8_t en_state
   return 0;
 }
 
-int spi_init(const SPI_Handle_t *p_spi_handle) { return 0; }
+int spi_init(const SPIHandle_t *p_spi_handle) {
+  if (p_spi_handle == NULL || p_spi_handle->p_spi_addr == NULL) return -1;  // NUll pointers
+
+  SPI_TypeDef *spi = p_spi_handle->p_spi_addr;
+  const SPIConfig_t *cfg = &(p_spi_handle->cfg);
+
+  spi->CR1 = 0;
+  spi->CR2 = 0;
+
+  if (cfg->device_mode == SPI_DEVICE_MODE_SLAVE) {
+  }
+
+  return 0;
+}
 
 int spi_deinit(const SPI_TypeDef *p_spi_addr) { return 0; }
 
