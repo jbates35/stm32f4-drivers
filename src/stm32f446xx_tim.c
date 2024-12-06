@@ -64,7 +64,7 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
  * @retval 0 on success, -1 if the timer_handle is NULL.
  */
 int timer_init(const TimerHandle_t *timer_handle) {
-  if (timer_handle == NULL) return -1;
+  if (timer_handle == NULL || timer_handle->p_base_addr == NULL) return -1;
 
   // Break the addr and config into separate variables for nicer looking code
   TIM_TypeDef *timer = (timer_handle->p_base_addr);
