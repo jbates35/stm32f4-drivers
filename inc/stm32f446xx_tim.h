@@ -1,3 +1,7 @@
+/** 
+  Timer Module
+  Made by Jimmy Bates - ~November 2024
+  **/
 #ifndef INC_STM34F446XX_TIMER_H_
 #define INC_STM34F446XX_TIMER_H_
 

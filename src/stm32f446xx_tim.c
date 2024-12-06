@@ -1,3 +1,8 @@
+/** 
+  Timer Module
+  Made by Jimmy Bates - ~November 2024
+**/
+
 #include "stm32f446xx_tim.h"
 
 #include <stdio.h>
