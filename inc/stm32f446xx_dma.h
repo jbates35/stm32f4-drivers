@@ -9,6 +9,7 @@
 #define INC_STM32F446XX_DMA_H_
 
 #include <stdint.h>
+
 #include "stm32f446xx.h"
 
 typedef enum { DMA_IO_TYPE_PERIPHERAL = 0, DMA_IO_TYPE_MEMORY } DMAIOType;
@@ -40,5 +41,7 @@ typedef struct {
 } DMAHandle_t;
 
 int dma_peri_clock_control(const DMA_TypeDef *base_addr, const uint8_t en_state);
+
+int dma_stream_init(const DMAHandle_t *dma_handle);
 
 #endif
