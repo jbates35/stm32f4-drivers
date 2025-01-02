@@ -39,4 +39,6 @@ typedef struct {
   DMA_Stream_TypeDef *p_stream_addr;
 } DMAHandle_t;
 
+int dma_peri_clock_control(const DMA_TypeDef *base_addr, const uint8_t en_state);
+
 #endif
