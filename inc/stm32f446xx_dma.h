@@ -8,6 +8,7 @@
 #ifndef INC_STM32F446XX_DMA_H_
 #define INC_STM32F446XX_DMA_H_
 
+#include <stdint.h>
 #include "stm32f446xx.h"
 
 typedef enum { DMA_IO_TYPE_PERIPHERAL = 0, DMA_IO_TYPE_MEMORY } DMAIOType;
@@ -30,11 +31,12 @@ typedef struct {
   uint8_t channel;
   DMAPriority priority;
   DMACircBuffer circ_buffer;
+  uint16_t dma_elements;
 } DMAConfig_t;
 
 typedef struct {
   DMAConfig_t cfg;
-  DMA_Stream_TypeDef *dma_stream;
+  DMA_Stream_TypeDef *p_stream_addr;
 } DMAHandle_t;
 
 #endif
