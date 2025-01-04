@@ -75,6 +75,7 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   // Set peripheral and memory addresses
   switch (dir) {
     case 0b00:
+    case 0b10:
       stream->PAR = cfg->in.addr;
       stream->CR |= (cfg->in.inc << DMA_SxCR_PINC_Pos);
       stream->M0AR = cfg->out.addr;
