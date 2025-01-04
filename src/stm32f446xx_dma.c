@@ -66,6 +66,9 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   // Set direction
   stream->CR |= (dir << DMA_SxCR_DIR_Pos);
 
+  // Set circular mode
+  uint8_t circ_buffer = cfg->circ_buffer ? 1 : 0;
+  stream->CR |= (circ_buffer << DMA_SxCR_CIRC_Pos);
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
