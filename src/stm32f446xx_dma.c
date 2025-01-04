@@ -5,7 +5,7 @@
 #include "stm32f446xx.h"
 
 #define DMAS {DMA1, DMA2}
-#define DMA_RCC_POS {RCC_AHB1ENR_DMA1EN, RCC_AHB1ENR_DMA2EN}
+#define DMA_RCC_POS {RCC_AHB1ENR_DMA1EN_Pos, RCC_AHB1ENR_DMA2EN_Pos}
 
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
@@ -83,12 +83,9 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
       stream->PAR = cfg->out.addr;
       stream->CR |= (cfg->out.inc << DMA_SxCR_PINC_Pos);
       break;
-    case 0b10:
-      stream->M0AR = cfg->in.addr;
-      stream->M1AR = cfg->out.addr;
-      stream->CR |= (cfg->in.inc << DMA_SxCR_MINC_Pos);
-      break;
   }
+
+  stream->CR |= (1 << DMA_SxCR_EN_Pos);
 
   return 0;
 }
