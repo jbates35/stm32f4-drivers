@@ -91,9 +91,6 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   uint8_t flow_control = cfg->flow_control ? 1 : 0;
   stream->CR |= (flow_control << DMA_SxCR_PFCTRL_Pos);
 
-  // Enable interrupt
-  uint8_t interrupt_en = cfg->interrupt_en ? 1 : 0;
-
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
