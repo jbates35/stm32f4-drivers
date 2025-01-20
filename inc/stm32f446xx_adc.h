@@ -12,9 +12,17 @@
 
 #include "stm32f446xx.h"
 
+typedef enum { ADC_DMA_DISABLE = 0, ADC_DMA_ENABLE } ADCDMAEn_t;
 typedef enum { ADC_INTERRUPT_DISABLE = 0, ADC_INTERRUPT_ENABLE } ADCInterruptEn_t;
 
 typedef struct {
+  ADCDMAEn_t en;
+  DMA_Stream_TypeDef *stream;
+  uint8_t channel;
+} ADCDMACfg_t;
+
+typedef struct {
+  ADCDMACfg_t dma_cfg;
 } ADCConfig_t;
 
 typedef struct {
