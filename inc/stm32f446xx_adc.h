@@ -12,17 +12,61 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { ADC_DMA_DISABLE = 0, ADC_DMA_ENABLE } ADCDMAEn_t;
+typedef enum {
+  ADC_RESOLUTION_6_BIT = 0,
+  ADC_RESOLUTION_8_BIT,
+  ADC_RESOLUTION_10_BIT,
+  ADC_RESOLUTION_12_BIT
+} ADCResolution_t;
 typedef enum { ADC_INTERRUPT_DISABLE = 0, ADC_INTERRUPT_ENABLE } ADCInterruptEn_t;
+typedef enum { ADC_INTERRUPT_EOC_SELECT_SINGLE = 0, ADC_INTERRUPT_EOC_SELECT_GROUP } ADCIntEOCSelect_t;
+typedef enum { ADC_TRIGGER_MODE_MANUAL = 0, ADC_TRIGGER_MODE_CONTINUOUS, ADC_TRIGGER_MODE_EXT } ADCTriggerMode_t;
+typedef enum { ADC_CHANNEL_DISABLE = 0, ADC_CHANNEL_ENABLE } ADCChannelEn_t;
+typedef enum { ADC_DUAL_MODE_DISABLE = 0, ADC_DUAL_MODE_ENABLE } ADCDualModeEn_t;
+typedef enum { ADC_DATA_CONFIG_SEQUENTIAL = 0, ADC_DATA_CONFIG_GROUPED } ADCDataConfig_t;
+typedef enum { ADC_DMA_DISABLE = 0, ADC_DMA_ENABLE } ADCDMAEn_t;
+typedef enum { ADC_CHANNEL_SPEED_LOW = 0, ADC_CHANNEL_SPEED_MEDIUM, ADC_CHANNEL_SPEED_HIGH } ADCChannelSpeed_t;
+typedef enum { ADC_CHANNEL_NON_REVERSED = 0, ADC_CHANNEL_REVERSED } ADCChannelReversed_t;
+typedef enum { ADC_DMA_DATA_WIDTH_16_BIT = 0, ADC_DMA_DATA_WIDTH_32_BIT } ADCDMADataWidth_t;
+
+typedef struct {
+  ADCChannelEn_t en;
+  uint8_t sequence[16];
+  ADCChannelSpeed_t speeds[16];
+  uint8_t channel_count;
+  ADCChannelReversed_t reversed;
+} ADCChannelConfig_t;
+
+typedef struct {
+  ADCTriggerMode_t mode;
+  uint8_t timer_sel;
+  uint8_t ccr_sel;
+} ADCTriggerConfig_t;
 
 typedef struct {
   ADCDMAEn_t en;
   DMA_Stream_TypeDef *stream;
-  uint8_t channel;
-} ADCDMACfg_t;
+  uint8_t dma_channel;
+  uint32_t data_reg_addr;
+  ADCDMADataWidth_t data_width;
+} ADCDMAConfig_t;
 
 typedef struct {
-  ADCDMACfg_t dma_cfg;
+  ADCDualModeEn_t en;
+  ADCDataConfig_t data_cfg;
+} ADCDualConfig_t;
+
+typedef struct {
+  ADCResolution_t resolution;
+  ADCInterruptEn_t interrupt_en;
+  ADCIntEOCSelect_t interrupt_eoc_sel;
+  ADCChannelConfig_t main_seq_chan_cfg;
+  ADCChannelConfig_t main_inj_chan_cfg;
+  ADCChannelConfig_t slave_seq_chan_cfg;
+  ADCChannelConfig_t slave_inj_chan_cfg;
+  ADCTriggerConfig_t trigger_cfg;
+  ADCDualConfig_t dual_cfg;
+  ADCDMAConfig_t dma_cfg;
 } ADCConfig_t;
 
 typedef struct {
