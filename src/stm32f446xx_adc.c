@@ -28,7 +28,7 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state)
   if (i == adc_reg_cnt) return -1;
 
   // Now enable or disable the rcc reg
-  uint8_t adc_rcc_pos[] = ADC_RCC_POS;
+  const uint8_t adc_rcc_pos[] = ADC_RCC_POS;
 
   if (en_state)
     RCC->APB2ENR |= (1 << adc_rcc_pos[i]);
@@ -38,4 +38,42 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state)
   return 0;
 }
 
-int adc_stream_init(const ADCHandle_t *adc_handle) { return 0; }
+int adc_stream_init(const ADCHandle_t *adc_handle) {
+  if (adc_handle == NULL || adc_handle->addr == NULL) return -1;
+
+  ADC_TypeDef *adc = adc_handle->addr;
+  const ADCConfig_t *cfg = &adc_handle->cfg;
+
+  // Clear ADC configs
+  adc->CR1 = 0;
+  adc->CR2 = 0;
+
+  // Resolution of ADC
+  uint8_t res = cfg->resolution <= 0b11 ? cfg->resolution : 0b11;
+  adc->CR1 |= (res >> ADC_CR1_RES_Pos);
+
+  // Interrupt enable (right now, only for EOC)
+  uint8_t int_en = cfg->interrupt_en ? 1 : 0;
+  adc->CR1 |= (int_en << ADC_CR1_EOCIE_Pos);
+
+  // Whether EOC happens after the entire sequence of conversions or after every single individual conversion
+  uint8_t eoc_mode = cfg->interrupt_eoc_sel ? 1 : 0;
+  adc->CR2 |= (eoc_mode << ADC_CR2_EOCS_Pos);
+
+  return 0;
+}
+
+float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width) {
+  // Use the bits per ADC sample to calculate the resolution
+  uint16_t adc_res = 1;
+  for (int i = 0; i < adc_bit_width; i++) adc_res *= 2;
+
+  // Find temperature in celsius
+  float v_sense = adc_val * 3.3 / adc_res;
+  return 400 * (v_sense - 0.76) + 25;
+}
+
+// NOTE:
+// Missing:
+// EXTI11 trigger
+// Watchdog stuff

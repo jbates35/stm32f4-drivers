@@ -13,10 +13,10 @@
 #include "stm32f446xx.h"
 
 typedef enum {
-  ADC_RESOLUTION_6_BIT = 0,
-  ADC_RESOLUTION_8_BIT,
+  ADC_RESOLUTION_12_BIT = 0,
   ADC_RESOLUTION_10_BIT,
-  ADC_RESOLUTION_12_BIT
+  ADC_RESOLUTION_8_BIT,
+  ADC_RESOLUTION_6_BIT
 } ADCResolution_t;
 typedef enum { ADC_INTERRUPT_DISABLE = 0, ADC_INTERRUPT_ENABLE } ADCInterruptEn_t;
 typedef enum { ADC_INTERRUPT_EOC_SELECT_SINGLE = 0, ADC_INTERRUPT_EOC_SELECT_GROUP } ADCIntEOCSelect_t;
@@ -77,5 +77,7 @@ typedef struct {
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state);
 
 int adc_stream_init(const ADCHandle_t *adc_handle);
+
+float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width);
 
 #endif
