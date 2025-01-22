@@ -60,6 +60,35 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
   uint8_t eoc_mode = cfg->interrupt_eoc_sel ? 1 : 0;
   adc->CR2 |= (eoc_mode << ADC_CR2_EOCS_Pos);
 
+  // Check if scan mode
+  if (cfg->main_seq_chan_cfg.en) {
+    // Set up ADC in scan mode
+    adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
+
+    int channel_count = cfg->main_seq_chan_cfg.channel_count;
+    if (channel_count < 16) channel_count = 16;
+
+    adc->SQR1 |= (channel_count << ADC_SQR1_L_Pos);
+    volatile uint32_t *sqrs[] = {&adc->SQR3, &adc->SQR2, &adc->SQR1};
+    volatile uint32_t *smprs[] = {&adc->SMPR1, &adc->SMPR2};
+    for (int i = 0; i < channel_count; i++) {
+      uint8_t channel = cfg->main_seq_chan_cfg.sequence[i];
+      uint8_t speed = cfg->main_seq_chan_cfg.speeds[i];
+
+      uint8_t sqr_reg = i / 6;
+      uint8_t sqr_pos = (i % 6) * 5;
+      *sqrs[sqr_reg] |= (channel << sqr_pos);
+
+      uint8_t smpr_reg = channel / 10;
+      uint8_t smpr_pos = (channel % 10) * 3;
+      *smprs[smpr_reg] |= (speed << smpr_pos);
+    }
+  }
+  if (cfg->main_inj_chan_cfg.en) {
+    // Set up ADC in scan mode
+    adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
+  }
+
   return 0;
 }
 
