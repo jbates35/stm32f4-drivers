@@ -20,8 +20,14 @@ typedef enum {
 } ADCResolution_t;
 typedef enum { ADC_INTERRUPT_DISABLE = 0, ADC_INTERRUPT_ENABLE } ADCInterruptEn_t;
 typedef enum { ADC_INTERRUPT_EOC_SELECT_SINGLE = 0, ADC_INTERRUPT_EOC_SELECT_GROUP } ADCIntEOCSelect_t;
-typedef enum { ADC_TRIGGER_MODE_MANUAL = 0, ADC_TRIGGER_MODE_CONTINUOUS, ADC_TRIGGER_MODE_EXT } ADCTriggerMode_t;
-typedef enum { ADC_CHANNEL_DISABLE = 0, ADC_CHANNEL_ENABLE } ADCScanEn_t;
+typedef enum {
+  ADC_TRIGGER_MODE_MANUAL = 0,
+  ADC_TRIGGER_MODE_CONTINUOUS,
+  ADC_TRIGGER_MODE_TIM,
+  ADC_TRIGGER_MODE_EXT
+} ADCTriggerMode_t;
+typedef enum { ADC_SCAN_DISABLE = 0, ADC_SCAN_ENABLE } ADCScanEn_t;
+typedef enum { ADC_INJ_AUTOSTART_OFF = 0, ADC_INJ_AUTOSTART_ON } ADCInjAutostart_t;
 typedef enum { ADC_DUAL_MODE_DISABLE = 0, ADC_DUAL_MODE_ENABLE } ADCDualModeEn_t;
 typedef enum { ADC_DATA_CONFIG_SEQUENTIAL = 0, ADC_DATA_CONFIG_GROUPED } ADCDataConfig_t;
 typedef enum { ADC_DMA_DISABLE = 0, ADC_DMA_ENABLE } ADCDMAEn_t;
@@ -48,29 +54,21 @@ typedef struct {
 } ADCTriggerConfig_t;
 
 typedef struct {
-  ADCDMAEn_t en;
-  DMA_Stream_TypeDef *stream;
-  uint8_t dma_channel;
-  uint32_t data_reg_addr;
-  ADCDMADataWidth_t data_width;
-} ADCDMAConfig_t;
-
-typedef struct {
   ADCDualModeEn_t en;
   ADCDataConfig_t data_cfg;
 } ADCDualConfig_t;
 
 typedef struct {
-  ADCResolution_t resolution;
-  ADCInterruptEn_t interrupt_en;
-  ADCIntEOCSelect_t interrupt_eoc_sel;
-  ADCScanConfig_t main_seq_chan_cfg;
-  ADCScanConfig_t main_inj_chan_cfg;
-  ADCScanConfig_t slave_seq_chan_cfg;
-  ADCScanConfig_t slave_inj_chan_cfg;
-  ADCTriggerConfig_t trigger_cfg;
-  ADCDualConfig_t dual_cfg;
-  ADCDMAConfig_t dma_cfg;
+  ADCResolution_t resolution;           // Done
+  ADCInterruptEn_t interrupt_en;        // Done
+  ADCIntEOCSelect_t interrupt_eoc_sel;  // Done
+  ADCScanConfig_t main_seq_chan_cfg;    // Done
+  ADCScanConfig_t main_inj_chan_cfg;    // Done
+  ADCScanConfig_t slave_seq_chan_cfg;   // Done
+  ADCScanConfig_t slave_inj_chan_cfg;   // Done
+  ADCTriggerConfig_t trigger_cfg;       // Not done
+  ADCInjAutostart_t inj_autostart;      // Done
+  ADCDualConfig_t dual_cfg;             // Done
 } ADCConfig_t;
 
 typedef struct {
