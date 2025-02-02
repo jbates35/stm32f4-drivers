@@ -71,7 +71,7 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
     adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
 
     int channel_count = cfg->main_seq_chan_cfg.channel_count;
-    if (channel_count < 16) channel_count = 16;
+    if (channel_count > 16) channel_count = 16;
 
     adc->SQR1 |= (channel_count << ADC_SQR1_L_Pos);
     volatile uint32_t *sqrs[] = {&adc->SQR3, &adc->SQR2, &adc->SQR1};
