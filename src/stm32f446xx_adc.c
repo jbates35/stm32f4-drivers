@@ -11,6 +11,11 @@
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
+void init_normal_scan_channels(ADC_TypeDef *adc, ADCChannel_t *sequence, uint8_t channel_count);
+void init_inj_scan_channels(ADC_TypeDef *adc, uint8_t *channels, uint8_t *speeds, uint8_t channel_count);
+
+uint8_t convert_channel_speed(ADCChannelSpeed_t speed);
+
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state) {
   // Avoid null pointer instantiations
   if (base_addr == NULL) return -1;
@@ -90,6 +95,41 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
   }
 
   return 0;
+}
+
+void init_normal_scan_channels(ADC_TypeDef *adc, ADCChannel_t *sequence, uint8_t channel_count) {
+  if (channel_count == 0) return;
+
+  // Set up ADC non-injected scan mode
+  adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
+  adc->SQR1 |= ((channel_count - 1) << ADC_SQR1_L_Pos);
+
+  volatile uint32_t *sqrs[] = {&adc->SQR3, &adc->SQR2, &adc->SQR1};
+  volatile uint32_t *smprs[] = {&adc->SMPR1, &adc->SMPR2};
+  for (int i = 0; i < channel_count; i++) {
+    uint8_t channel = sequence[i].channel;
+
+    uint8_t sqr_reg = i / 6;
+    uint8_t sqr_pos = (i % 6) * 5;
+    *sqrs[sqr_reg] |= (channel << sqr_pos);
+
+    uint8_t smpr_reg = channel / 10;
+    uint8_t smpr_pos = (channel % 10) * 3;
+
+    uint8_t speed = convert_channel_speed(sequence[i].speed);
+    *smprs[smpr_reg] |= (speed << smpr_pos);
+  }
+}
+
+uint8_t convert_channel_speed(ADCChannelSpeed_t speed) {
+  switch (speed) {
+    case ADC_CHANNEL_SPEED_HIGH:
+      return 0b000;
+    case ADC_CHANNEL_SPEED_MEDIUM:
+      return 0b100;
+    case ADC_CHANNEL_SPEED_LOW:
+      return 0b111;
+  }
 }
 
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width) {
