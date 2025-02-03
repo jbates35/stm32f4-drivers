@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "stm32f446xx.h"
-#include "stm32f446xx_dma.h"
 
 #define ADCS {ADC1, ADC2, ADC3}
 #define ADC_RCC_POS {RCC_APB2ENR_ADC1EN_Pos, RCC_APB2ENR_ADC2EN_Pos, RCC_APB2ENR_ADC3EN_Pos}
@@ -47,31 +46,31 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
   // Null pointer handling
   if (adc_handle == NULL || adc_handle->addr == NULL) return -1;
 
-  ADC_TypeDef *adc = adc_handle->addr;
+  ADC_TypeDef *adc_reg = adc_handle->addr;
   const ADCConfig_t *cfg = &adc_handle->cfg;
 
   // If ADC is set in dual mode, the ADC master is ADC 1
-  if (cfg->dual_cfg.en && adc != ADC1) return -2;
+  if (cfg->dual_cfg.en && adc_reg != ADC1) return -2;
 
   // Clear ADC configs
-  adc->CR1 = 0;
-  adc->CR2 = 0;
+  adc_reg->CR1 = 0;
+  adc_reg->CR2 = 0;
 
   // Resolution of ADC
   uint8_t res = cfg->resolution <= 0b11 ? cfg->resolution : 0b11;
-  adc->CR1 |= (res >> ADC_CR1_RES_Pos);
+  adc_reg->CR1 |= (res >> ADC_CR1_RES_Pos);
 
   // Interrupt enable (right now, only for EOC)
   uint8_t int_en = cfg->interrupt_en ? 1 : 0;
-  adc->CR1 |= (int_en << ADC_CR1_EOCIE_Pos);
+  adc_reg->CR1 |= (int_en << ADC_CR1_EOCIE_Pos);
 
   // Whether EOC happens after the entire sequence of conversions or after every single individual conversion
   uint8_t eoc_mode = cfg->interrupt_eoc_sel ? 1 : 0;
-  adc->CR2 |= (eoc_mode << ADC_CR2_EOCS_Pos);
+  adc_reg->CR2 |= (eoc_mode << ADC_CR2_EOCS_Pos);
 
   // Configure trigger mode
   if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_CONTINUOUS) {
-    adc->CR2 |= (1 << ADC_CR2_CONT_Pos);
+    adc_reg->CR2 |= (1 << ADC_CR2_CONT_Pos);
   } else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_TIM) {
     // TODO: Complete
   } else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_EXT) {
@@ -80,20 +79,20 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
 
   // Configure whether injected is autostarted after normal channels are sampled
   uint8_t inj_autostart = cfg->inj_autostart ? 1 : 0;
-  adc->CR1 |= (inj_autostart << ADC_CR1_JAUTO_Pos);
+  adc_reg->CR1 |= (inj_autostart << ADC_CR1_JAUTO_Pos);
 
   // Configure scan mode (non-injected)
   if (cfg->main_seq_chan_cfg.en) {
     int channel_count = cfg->main_seq_chan_cfg.sequence_length;
     if (channel_count > 16) channel_count = 16;
-    init_normal_scan_channels(adc, cfg->main_seq_chan_cfg.sequence, channel_count);
+    init_normal_scan_channels(adc_reg, cfg->main_seq_chan_cfg.sequence, channel_count);
   }
 
   // Configure scan mode (injected)
   if (cfg->main_inj_chan_cfg.en) {
     int channel_count = cfg->main_inj_chan_cfg.sequence_length;
     if (channel_count > 4) channel_count = 4;
-    init_injected_scan_channels(adc, cfg->main_inj_chan_cfg.sequence, channel_count);
+    init_injected_scan_channels(adc_reg, cfg->main_inj_chan_cfg.sequence, channel_count);
   }
 
   // Take care of dual mode
@@ -124,25 +123,27 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
     ADC->CCR |= (data_cfg << ADC_CCR_MULTI_Pos);
   }
 
+  adc_reg->CR2 |= (1 << ADC_CR2_ADON_Pos);
+
   return 0;
 }
 
-void init_normal_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count) {
+void init_normal_scan_channels(ADC_TypeDef *adc_reg, const ADCChannel_t *sequence, const uint8_t channel_count) {
   if (channel_count == 0) return;
 
   // Set up ADC non-injected scan mode
-  adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
-  adc->SQR1 |= ((channel_count - 1) << ADC_SQR1_L_Pos);
+  adc_reg->CR1 |= (1 << ADC_CR1_SCAN_Pos);
+  adc_reg->SQR1 |= ((channel_count - 1) << ADC_SQR1_L_Pos);
 
   // Configure DMA as it's required for scan mode
-  adc->CR2 |= (1 << ADC_CR2_DMA_Pos);
-  adc->CR2 |= (1 << ADC_CR2_DDS_Pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_DMA_Pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_DDS_Pos);
 
   // Sequence configuration registers
-  volatile uint32_t *sqrs[] = {&adc->SQR3, &adc->SQR2, &adc->SQR1};
+  volatile uint32_t *sqrs[] = {&adc_reg->SQR3, &adc_reg->SQR2, &adc_reg->SQR1};
 
   // Channel speed registers
-  volatile uint32_t *smprs[] = {&adc->SMPR1, &adc->SMPR2};
+  volatile uint32_t *smprs[] = {&adc_reg->SMPR1, &adc_reg->SMPR2};
 
   for (int i = 0; i < channel_count; i++) {
     uint8_t channel = sequence[i].channel;
@@ -160,19 +161,19 @@ void init_normal_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, c
   }
 }
 
-void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count) {
+void init_injected_scan_channels(ADC_TypeDef *adc_reg, const ADCChannel_t *sequence, const uint8_t channel_count) {
   if (channel_count == 0) return;
 
   // Setup injected channels, scan mode
-  adc->CR1 |= (1 << ADC_CR1_SCAN_Pos);
-  adc->JSQR |= ((channel_count - 1) >> ADC_JSQR_JL_Pos);
+  adc_reg->CR1 |= (1 << ADC_CR1_SCAN_Pos);
+  adc_reg->JSQR |= ((channel_count - 1) >> ADC_JSQR_JL_Pos);
 
   // Configure DMA as it's required for scan mode
-  adc->CR2 |= (1 << ADC_CR2_DMA_Pos);
-  adc->CR2 |= (1 << ADC_CR2_DDS_Pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_DMA_Pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_DDS_Pos);
 
   // Channel speed registers
-  volatile uint32_t *smprs[] = {&adc->SMPR1, &adc->SMPR2};
+  volatile uint32_t *smprs[] = {&adc_reg->SMPR1, &adc_reg->SMPR2};
 
   // Offset due to JSQR needing to be configured in non-reversed order but starting from 4-n
   uint8_t offset = (4 - channel_count) * 5;
@@ -182,7 +183,7 @@ void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence,
 
     // Configure the JSQR sequence position with the channel
     uint8_t jsqr_pos = i * 5 + offset;
-    adc->JSQR |= (channel << jsqr_pos);
+    adc_reg->JSQR |= (channel << jsqr_pos);
 
     // Set sample time for the channel
     // NOTE: This might create a conflict with the normal scan mode but this is unavoidable
