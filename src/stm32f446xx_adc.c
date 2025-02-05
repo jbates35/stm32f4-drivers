@@ -15,7 +15,7 @@ void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence,
 
 uint8_t convert_channel_speed(ADCChannelSpeed_t speed);
 
-int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state) {
+int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state) {
   // Avoid null pointer instantiations
   if (base_addr == NULL) return -1;
 
@@ -34,7 +34,7 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state)
   // Now enable or disable the rcc reg
   const uint8_t adc_rcc_pos[] = ADC_RCC_POS;
 
-  if (en_state)
+  if (en_state == ADC_PERI_CLOCK_ENABLE)
     RCC->APB2ENR |= (1 << adc_rcc_pos[i]);
   else
     RCC->APB2RSTR |= (1 << adc_rcc_pos[i]);
@@ -42,7 +42,7 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state)
   return 0;
 }
 
-int adc_stream_init(const ADCHandle_t *adc_handle) {
+int adc_init(const ADCHandle_t *adc_handle) {
   // Null pointer handling
   if (adc_handle == NULL || adc_handle->addr == NULL) return -1;
 
@@ -65,8 +65,8 @@ int adc_stream_init(const ADCHandle_t *adc_handle) {
   adc_reg->CR1 |= (int_en << ADC_CR1_EOCIE_Pos);
 
   // Whether EOC happens after the entire sequence of conversions or after every single individual conversion
-  uint8_t eoc_mode = cfg->interrupt_eoc_sel ? 1 : 0;
-  adc_reg->CR2 |= (eoc_mode << ADC_CR2_EOCS_Pos);
+  uint8_t eoc_sel = cfg->eoc_sel ? 1 : 0;
+  adc_reg->CR2 |= (eoc_sel << ADC_CR2_EOCS_Pos);
 
   // Configure trigger mode
   if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_CONTINUOUS) {
@@ -203,6 +203,30 @@ uint8_t convert_channel_speed(ADCChannelSpeed_t speed) {
     case ADC_CHANNEL_SPEED_LOW:
       return 0b111;
   }
+}
+
+uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpeed_t channel_speed, uint8_t blocking) {
+  if (adc_reg == NULL) return 0xFFFF;
+
+  // Set up ADC non-injected scan mode
+  adc_reg->SQR1 &= ~(0b1111 << ADC_SQR1_L_Pos);
+  adc_reg->SQR3 |= ((channel & 0b11111) << ADC_SQR3_SQ1_Pos);
+
+  // Channel speed registers
+  volatile uint32_t *smprs[] = {&adc_reg->SMPR1, &adc_reg->SMPR2};
+
+  // Set sample time for the channel
+  uint8_t smpr_reg = (channel & 0b11111) / 10;
+  uint8_t smpr_pos = ((channel & 0b11111) % 10) * 3;
+  *smprs[smpr_reg] |= (convert_channel_speed(channel_speed) << smpr_pos);
+
+  adc_reg->CR2 |= (1 << ADC_CR2_SWSTART_Pos);
+
+  if (!blocking) return 0xFFFF;
+
+  while (!(adc_reg->SR & (1 << ADC_SR_EOC_Pos)));
+
+  return adc_reg->DR;
 }
 
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width) {

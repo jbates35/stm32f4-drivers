@@ -12,6 +12,7 @@
 
 #include "stm32f446xx.h"
 
+typedef enum { ADC_PERI_CLOCK_DISABLE = 0, ADC_PERI_CLOCK_ENABLE } ADCPeriClockEn_t;
 typedef enum {
   ADC_RESOLUTION_12_BIT = 0,
   ADC_RESOLUTION_10_BIT,
@@ -19,7 +20,7 @@ typedef enum {
   ADC_RESOLUTION_6_BIT
 } ADCResolution_t;
 typedef enum { ADC_INTERRUPT_DISABLE = 0, ADC_INTERRUPT_ENABLE } ADCInterruptEn_t;
-typedef enum { ADC_INTERRUPT_EOC_SELECT_SINGLE = 0, ADC_INTERRUPT_EOC_SELECT_GROUP } ADCIntEOCSelect_t;
+typedef enum { ADC_INTERRUPT_EOC_SELECT_SINGLE = 0, ADC_INTERRUPT_EOC_SELECT_GROUP } ADCEOCSelect_t;
 typedef enum {
   ADC_TRIGGER_MODE_MANUAL = 0,
   ADC_TRIGGER_MODE_CONTINUOUS,
@@ -59,16 +60,16 @@ typedef struct {
 } ADCDualConfig_t;
 
 typedef struct {
-  ADCResolution_t resolution;           // Done
-  ADCInterruptEn_t interrupt_en;        // Done
-  ADCIntEOCSelect_t interrupt_eoc_sel;  // Done
-  ADCScanConfig_t main_seq_chan_cfg;    // Done
-  ADCScanConfig_t main_inj_chan_cfg;    // Done
-  ADCScanConfig_t slave_seq_chan_cfg;   // Done
-  ADCScanConfig_t slave_inj_chan_cfg;   // Done
-  ADCTriggerConfig_t trigger_cfg;       // Not done
-  ADCInjAutostart_t inj_autostart;      // Done
-  ADCDualConfig_t dual_cfg;             // Done
+  ADCResolution_t resolution;          // Done
+  ADCInterruptEn_t interrupt_en;       // Done
+  ADCEOCSelect_t eoc_sel;              // Done
+  ADCScanConfig_t main_seq_chan_cfg;   // Done
+  ADCScanConfig_t main_inj_chan_cfg;   // Done
+  ADCScanConfig_t slave_seq_chan_cfg;  // Done
+  ADCScanConfig_t slave_inj_chan_cfg;  // Done
+  ADCTriggerConfig_t trigger_cfg;      // Not done
+  ADCInjAutostart_t inj_autostart;     // Done
+  ADCDualConfig_t dual_cfg;            // Done
 } ADCConfig_t;
 
 typedef struct {
@@ -76,9 +77,11 @@ typedef struct {
   ADC_TypeDef *addr;
 } ADCHandle_t;
 
-int adc_peri_clock_control(const ADC_TypeDef *base_addr, const uint8_t en_state);
+int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state);
 
-int adc_stream_init(const ADCHandle_t *adc_handle);
+int adc_init(const ADCHandle_t *adc_handle);
+
+uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpeed_t channel_speed, uint8_t blocking);
 
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width);
 
