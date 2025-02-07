@@ -35,6 +35,7 @@ typedef enum { ADC_DMA_DISABLE = 0, ADC_DMA_ENABLE } ADCDMAEn_t;
 typedef enum { ADC_CHANNEL_SPEED_LOW = 0, ADC_CHANNEL_SPEED_MEDIUM, ADC_CHANNEL_SPEED_HIGH } ADCChannelSpeed_t;
 typedef enum { ADC_CHANNEL_NON_REVERSED = 0, ADC_CHANNEL_REVERSED } ADCChannelReversed_t;
 typedef enum { ADC_DMA_DATA_WIDTH_16_BIT = 0, ADC_DMA_DATA_WIDTH_32_BIT } ADCDMADataWidth_t;
+typedef enum { ADC_TEMPORBAT_DISABLE = 0, ADC_TEMPORBAT_TEMPERATURE, ADC_TEMPORBAT_BATTERY } ADCTempOrBatEn_t;
 
 typedef struct {
   uint8_t channel;
@@ -70,6 +71,7 @@ typedef struct {
   ADCTriggerConfig_t trigger_cfg;      // Not done
   ADCInjAutostart_t inj_autostart;     // Done
   ADCDualConfig_t dual_cfg;            // Done
+  ADCTempOrBatEn_t temp_or_bat_en;
 } ADCConfig_t;
 
 typedef struct {

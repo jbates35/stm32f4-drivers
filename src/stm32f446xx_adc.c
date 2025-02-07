@@ -77,6 +77,15 @@ int adc_init(const ADCHandle_t *adc_handle) {
     // TODO: Complete
   }
 
+  // Configure temp and battery peripherals (only ADC1 can sample these though)
+  if (adc_reg == ADC1) {
+    uint8_t temp_en = (cfg->temp_or_bat_en == ADC_TEMPORBAT_TEMPERATURE);
+    ADC->CCR |= (temp_en << ADC_CCR_TSVREFE_Pos);
+
+    uint8_t bat_en = (cfg->temp_or_bat_en == ADC_TEMPORBAT_BATTERY);
+    ADC->CCR |= (bat_en << ADC_CCR_VBATE_Pos);
+  }
+
   // Configure whether injected is autostarted after normal channels are sampled
   uint8_t inj_autostart = cfg->inj_autostart ? 1 : 0;
   adc_reg->CR1 |= (inj_autostart << ADC_CR1_JAUTO_Pos);
