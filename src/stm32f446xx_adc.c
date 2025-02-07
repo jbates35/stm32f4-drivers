@@ -219,6 +219,8 @@ uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpee
 
   // Set up ADC non-injected scan mode
   adc_reg->SQR1 &= ~(0b1111 << ADC_SQR1_L_Pos);
+
+  adc_reg->SQR3 &= ~(0b11111 << ADC_SQR3_SQ1_Pos);
   adc_reg->SQR3 |= ((channel & 0b11111) << ADC_SQR3_SQ1_Pos);
 
   // Channel speed registers
