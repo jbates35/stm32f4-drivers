@@ -10,7 +10,7 @@
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
-int dma_peri_clock_control(const DMA_TypeDef *base_addr, const uint8_t en_state) {
+int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t en_state) {
   // If null pointer, return error code
   if (base_addr == NULL) return -1;
 
@@ -27,7 +27,7 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const uint8_t en_state)
 
   // Enable or disable DMA peripheral's clock
   const unsigned int dma_reg_pos[] = DMA_RCC_POS;
-  if (en_state)
+  if (en_state == DMA_PERI_CLOCK_ENABLE)
     RCC->AHB1ENR |= (1 << dma_reg_pos[i]);
   else
     RCC->AHB1RSTR |= (1 << dma_reg_pos[i]);

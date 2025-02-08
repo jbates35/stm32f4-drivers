@@ -19,7 +19,7 @@ typedef enum { DMA_IO_ARR_STATIC = 0, DMA_IO_ARR_INCREMENT } DMAArrIncrement_t;
 typedef enum { DMA_BUFFER_FINITE = 0, DMA_BUFFER_CIRCULAR } DMACircBuffer_t;
 typedef enum { DMA_PERIPH_NO_FLOW_CONTROL = 0, DMA_PERIPH_FLOW_CONTROL = 1 } DMAFlowControl_t;
 typedef enum { DMA_INTERRUPT_DISABLE = 0, DMA_INTERRUPT_ENABLE } DMAInterruptEn_t;
-
+typedef enum { DMA_PERI_CLOCK_DISABL = 0, DMA_PERI_CLOCK_ENABLE } DMAPeriClockEn_t;
 typedef struct {
   uint32_t addr;
   DMAIOType_t type;
@@ -43,7 +43,7 @@ typedef struct {
   DMA_Stream_TypeDef *p_stream_addr;
 } DMAHandle_t;
 
-int dma_peri_clock_control(const DMA_TypeDef *base_addr, const uint8_t en_state);
+int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t en_state);
 
 int dma_stream_init(const DMAHandle_t *dma_handle);
 
