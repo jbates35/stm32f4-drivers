@@ -13,6 +13,8 @@
 void init_normal_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count);
 void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count);
 
+uint8_t adc_base_scan_sample(ADC_TypeDef *adc_reg, uint8_t bit_mask_pos, const ADCBlocking_t blocking);
+
 uint8_t convert_channel_speed(ADCChannelSpeed_t speed);
 
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state) {
@@ -214,7 +216,8 @@ uint8_t convert_channel_speed(ADCChannelSpeed_t speed) {
   }
 }
 
-uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpeed_t channel_speed, uint8_t blocking) {
+uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const ADCChannelSpeed_t channel_speed,
+                           const ADCBlocking_t blocking) {
   if (adc_reg == NULL) return 0xFFFF;
 
   // Set up ADC non-injected scan mode
@@ -233,11 +236,32 @@ uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpee
 
   adc_reg->CR2 |= (1 << ADC_CR2_SWSTART_Pos);
 
-  if (!blocking) return 0xFFFF;
+  if (blocking == ADC_NON_BLOCKING) return 0xFFFF;
 
   while (!(adc_reg->SR & (1 << ADC_SR_EOC_Pos)));
 
   return adc_reg->DR;
+}
+
+uint8_t adc_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) {
+  return adc_base_scan_sample(adc_reg, ADC_CR2_SWSTART_Pos, blocking);
+}
+
+uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) {
+  return adc_base_scan_sample(adc_reg, ADC_CR2_JSWSTART_Pos, blocking);
+}
+
+uint8_t adc_base_scan_sample(ADC_TypeDef *adc_reg, uint8_t bit_mask_pos, const ADCBlocking_t blocking) {
+  if (adc_reg == NULL) return -1;
+  // adc_reg->CR2 |= (1 << bit_mask_pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_SWSTART_Pos);
+
+  if (blocking != ADC_NON_BLOCKING) {
+    while (!(adc_reg->SR & (1 << ADC_SR_EOC_Pos)));
+    adc_reg->SR &= ~(1 << ADC_SR_EOC_Pos);
+  }
+
+  return 0;
 }
 
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width) {

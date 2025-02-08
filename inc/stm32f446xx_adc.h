@@ -36,6 +36,7 @@ typedef enum { ADC_CHANNEL_SPEED_LOW = 0, ADC_CHANNEL_SPEED_MEDIUM, ADC_CHANNEL_
 typedef enum { ADC_CHANNEL_NON_REVERSED = 0, ADC_CHANNEL_REVERSED } ADCChannelReversed_t;
 typedef enum { ADC_DMA_DATA_WIDTH_16_BIT = 0, ADC_DMA_DATA_WIDTH_32_BIT } ADCDMADataWidth_t;
 typedef enum { ADC_TEMPORBAT_DISABLE = 0, ADC_TEMPORBAT_TEMPERATURE, ADC_TEMPORBAT_BATTERY } ADCTempOrBatEn_t;
+typedef enum { ADC_NON_BLOCKING = 0, ADC_BLOCKING } ADCBlocking_t;
 
 typedef struct {
   uint8_t channel;
@@ -83,7 +84,12 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t 
 
 int adc_init(const ADCHandle_t *adc_handle);
 
-uint16_t adc_single_sample(ADC_TypeDef *adc_reg, uint8_t channel, ADCChannelSpeed_t channel_speed, uint8_t blocking);
+uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const ADCChannelSpeed_t channel_speed,
+                           const ADCBlocking_t blocking);
+
+uint8_t adc_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
+
+uint8_t adc_inj_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
 
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width);
 
