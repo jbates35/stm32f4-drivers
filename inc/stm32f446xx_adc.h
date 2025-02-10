@@ -83,14 +83,16 @@ typedef struct {
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state);
 
 int adc_init(const ADCHandle_t *adc_handle);
-
 uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const ADCChannelSpeed_t channel_speed,
                            const ADCBlocking_t blocking);
 
-uint8_t adc_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
+// For ADC Scan sample, handle the data with an interrupt, as blocking with EOC is disabled when DMA is involved
+uint8_t adc_scan_sample(ADC_TypeDef *adc_reg);
 
-uint8_t adc_inj_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
+// For ADC Inj scan sample, you can use blocking no problem
+uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
 
+uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel);
 float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width);
 
 #endif
