@@ -93,6 +93,7 @@ uint8_t adc_scan_sample(ADC_TypeDef *adc_reg);
 uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
 
 uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel);
-float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width);
+uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type);
 
+float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution);
 #endif

@@ -276,7 +276,19 @@ uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel) {
   return *inj_regs[tmp_channel];
 }
 
-float convert_adc_to_temperature(uint16_t adc_val, uint8_t adc_bit_width) {
+uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type) {
+  if (adc_reg == NULL) return 0;
+
+  if (adc_reg->SR & 1 << interrupt_type) {
+    adc_reg->SR &= ~(1 << interrupt_type);
+
+    return 1;
+  }
+
+  return 0;
+}
+
+float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution) {
   // Use the bits per ADC sample to calculate the resolution
   uint16_t adc_res = 1;
   for (int i = 0; i < adc_bit_width; i++) adc_res *= 2;
