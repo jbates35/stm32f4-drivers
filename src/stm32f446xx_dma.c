@@ -91,10 +91,39 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   uint8_t flow_control = cfg->flow_control ? 1 : 0;
   stream->CR |= (flow_control << DMA_SxCR_PFCTRL_Pos);
 
+  // Set interrupts
+  if (cfg->interrupt_en.full_transfer) stream->CR |= (1 << DMA_SxCR_TCIE_Pos);
+  if (cfg->interrupt_en.half_transfer) stream->CR |= (1 << DMA_SxCR_HTIE_Pos);
+  if (cfg->interrupt_en.transfer_error) stream->CR |= (1 << DMA_SxCR_TEIE_Pos);
+  if (cfg->interrupt_en.direct_mode_error) stream->CR |= (1 << DMA_SxCR_DMEIE_Pos);
+  ;
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
   stream->CR |= (1 << DMA_SxCR_EN_Pos);
+
+  return 0;
+}
+
+int dma_irq_handling(const DMA_TypeDef *base_addr, uint8_t stream_num, DMAInterruptType_t interrupt_type) {
+  if (base_addr == NULL) return 0;
+  if (stream_num > 8) return 0;
+  if (interrupt_type == 1 || interrupt_type > 5) return 0;
+
+  const volatile uint32_t *set_regs[] = {&base_addr->LISR, &base_addr->HISR};
+  volatile uint32_t *clear_regs[] = {(volatile uint32_t *)&base_addr->LIFCR, (volatile uint32_t *)&base_addr->HIFCR};
+
+  uint8_t reg_ind = stream_num / 4;
+  uint8_t reg_bit_offset = (stream_num % 4) * 6;
+
+  if (reg_bit_offset >= 12) {
+    reg_bit_offset = reg_bit_offset + 4;
+  }
+
+  if (*set_regs[reg_ind] & (1 << (interrupt_type + reg_bit_offset))) {
+    *(clear_regs[reg_ind]) |= (1 << (interrupt_type + reg_bit_offset));
+    return 1;
+  }
 
   return 0;
 }
