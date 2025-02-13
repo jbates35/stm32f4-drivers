@@ -289,12 +289,15 @@ uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrup
 }
 
 float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution) {
+  uint8_t bit_widths[] = {12, 10, 8, 6};
+  uint8_t bit_width = bit_widths[(int)resolution];
+
   // Use the bits per ADC sample to calculate the resolution
-  uint16_t adc_res = 1;
-  for (int i = 0; i < adc_bit_width; i++) adc_res *= 2;
+  uint16_t max_adc_range = 1;
+  for (int i = 0; i < bit_width; i++) max_adc_range *= 2;
 
   // Find temperature in celsius
-  float v_sense = adc_val * 3.3 / adc_res;
+  float v_sense = adc_val * 3.3 / max_adc_range;
   return 400 * (v_sense - 0.76) + 25;
 }
 
