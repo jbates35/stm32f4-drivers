@@ -74,10 +74,29 @@ int adc_init(const ADCHandle_t *adc_handle) {
   // Configure trigger mode
   if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_CONTINUOUS) {
     adc_reg->CR2 |= (1 << ADC_CR2_CONT_Pos);
-  } else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_TIM) {
-    // TODO: Complete
-  } else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_EXT) {
-    // TODO: Complete
+  } else if ((cfg->trigger_cfg.mode) != ADC_TRIGGER_MODE_MANUAL) {
+    // Take care of enabling external trigger and edge select
+    uint8_t edge_sel = cfg->trigger_cfg.edge_sel;
+    if (edge_sel > 3) edge_sel = 3;
+
+    // Take care of what actually triggers the ext trig
+    uint8_t trigger_ext_sel = 0;
+    if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_TIM)
+      trigger_ext_sel = cfg->trigger_cfg.timer_sel;
+    else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_EXT11)
+      trigger_ext_sel = 0b1111;
+    if (trigger_ext_sel > 0b1111) trigger_ext_sel = 0b1111;
+
+    // Store bits from the two options
+    ADCTriggerChanSel_t chan_type_sel = cfg->trigger_cfg.channel_type_sel;
+    if (chan_type_sel == ADC_TRIGGER_CHANNEL_TYPE_NORMAL || chan_type_sel == ADC_TRIGGER_CHANNEL_TYPE_BOTH) {
+      adc_reg->CR2 |= (edge_sel << ADC_CR2_EXTEN_Pos);
+      adc_reg->CR2 |= (trigger_ext_sel << ADC_CR2_EXTSEL_Pos);
+    }
+    if (chan_type_sel == ADC_TRIGGER_CHANNEL_TYPE_INJECTED || chan_type_sel == ADC_TRIGGER_CHANNEL_TYPE_BOTH) {
+      adc_reg->CR2 |= (edge_sel << ADC_CR2_JEXTEN_Pos);
+      adc_reg->CR2 |= (trigger_ext_sel << ADC_CR2_JEXTSEL_Pos);
+    }
   }
 
   // Configure temp and battery peripherals (only ADC1 can sample these though)

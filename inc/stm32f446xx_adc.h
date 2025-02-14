@@ -25,8 +25,31 @@ typedef enum {
   ADC_TRIGGER_MODE_MANUAL = 0,
   ADC_TRIGGER_MODE_CONTINUOUS,
   ADC_TRIGGER_MODE_TIM,
-  ADC_TRIGGER_MODE_EXT
+  ADC_TRIGGER_MODE_EXT11
 } ADCTriggerMode_t;
+typedef enum {
+  ADC_TRIGGER_TIM1_CH1 = 0,
+  ADC_TRIGGER_TIM1_CH2,
+  ADC_TRIGGER_TIM1_CH3,
+  ADC_TRIGGER_TIM2_CH2,
+  ADC_TRIGGER_TIM2_CH3,
+  ADC_TRIGGER_TIM2_CH4,
+  ADC_TRIGGER_TIM2_TRGO,
+  ADC_TRIGGER_TIM3_CH1,
+  ADC_TRIGGER_TIM3_TRGO,
+  ADC_TRIGGER_TIM4_CH4,
+  ADC_TRIGGER_TIM5_CH1,
+  ADC_TRIGGER_TIM5_CH2,
+  ADC_TRIGGER_TIM5_CH3,
+  ADC_TRIGGER_TIM8_CH1,
+  ADC_TRIGGER_TIM8_TRGO
+} ADCTriggerTimSel_t;
+typedef enum { ADC_TRIGGER_EDGE_RISING = 1, ADC_TRIGGER_EDGE_FALLING, ADC_TRIGGER_EDGE_BOTH } ADCTriggerEdgeSel_t;
+typedef enum {
+  ADC_TRIGGER_CHANNEL_TYPE_NORMAL = 0,
+  ADC_TRIGGER_CHANNEL_TYPE_INJECTED,
+  ADC_TRIGGER_CHANNEL_TYPE_BOTH
+} ADCTriggerChanSel_t;
 typedef enum { ADC_SCAN_DISABLE = 0, ADC_SCAN_ENABLE } ADCScanEn_t;
 typedef enum { ADC_INJ_AUTOSTART_OFF = 0, ADC_INJ_AUTOSTART_ON } ADCInjAutostart_t;
 typedef enum { ADC_DUAL_MODE_DISABLE = 0, ADC_DUAL_MODE_ENABLE } ADCDualModeEn_t;
@@ -53,8 +76,9 @@ typedef struct {
 
 typedef struct {
   ADCTriggerMode_t mode;
-  uint8_t timer_sel;
-  uint8_t ccr_sel;
+  ADCTriggerTimSel_t timer_sel;
+  ADCTriggerEdgeSel_t edge_sel;
+  ADCTriggerChanSel_t channel_type_sel;
 } ADCTriggerConfig_t;
 
 typedef struct {
