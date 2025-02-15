@@ -96,7 +96,7 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   if (cfg->interrupt_en.half_transfer) stream->CR |= (1 << DMA_SxCR_HTIE_Pos);
   if (cfg->interrupt_en.transfer_error) stream->CR |= (1 << DMA_SxCR_TEIE_Pos);
   if (cfg->interrupt_en.direct_mode_error) stream->CR |= (1 << DMA_SxCR_DMEIE_Pos);
-  ;
+
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
