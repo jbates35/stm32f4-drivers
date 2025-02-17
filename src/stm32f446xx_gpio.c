@@ -15,7 +15,7 @@
  * @param p_GPIO_addr Pointer to base address for gpio struct
  * @param en_state 1 for enable, 0 for disable
  */
-void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const uint8_t en_state) {
+void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const GPIOPeriClockEnable_t en_state) {
   if (p_GPIO_addr == NULL) return;
 
   static GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;

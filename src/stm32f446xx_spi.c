@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 
-#include "stm32f446xx.h"
 
 #define SPIS {SPI1, SPI2, SPI3, SPI4}
 #define SPIS_RCC_REGS {&RCC->APB2ENR, &RCC->APB1ENR, &RCC->APB1ENR, &RCC->APB2ENR}
