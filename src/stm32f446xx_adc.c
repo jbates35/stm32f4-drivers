@@ -10,10 +10,6 @@
 
 void init_normal_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count);
 void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count);
-
-uint8_t adc_base_scan_sample(ADC_TypeDef *adc_reg, uint8_t start_bit_pos, uint8_t eoc_bit_pos,
-                             const ADCBlocking_t blocking);
-
 uint8_t convert_channel_speed(ADCChannelSpeed_t speed);
 
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state) {
@@ -269,47 +265,14 @@ uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const AD
   return adc_reg->DR;
 }
 
-uint8_t adc_scan_sample(ADC_TypeDef *adc_reg) {
-  return adc_base_scan_sample(adc_reg, ADC_CR2_SWSTART_Pos, ADC_SR_EOC_Pos, ADC_NON_BLOCKING);
-}
-
 uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) {
-  return adc_base_scan_sample(adc_reg, ADC_CR2_JSWSTART_Pos, ADC_SR_JEOC_Pos, blocking);
-}
-
-uint8_t adc_base_scan_sample(ADC_TypeDef *adc_reg, uint8_t start_bit_pos, uint8_t eoc_bit_pos,
-                             const ADCBlocking_t blocking) {
   if (adc_reg == NULL) return -1;
 
-  adc_reg->CR2 |= (1 << start_bit_pos);
+  adc_reg->CR2 |= (1 << ADC_CR2_JSWSTART_Pos);
 
   if (blocking != ADC_NON_BLOCKING) {
-    while (!(adc_reg->SR & (1 << eoc_bit_pos)));
-    adc_reg->SR &= ~(1 << eoc_bit_pos);
-  }
-
-  return 0;
-}
-
-uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel) {
-  if (adc_reg == NULL) return 0xFFFF;
-
-  // Change channel from 1-4 to 0-3 for array, and protect against values over the number of channels allowed
-  uint8_t tmp_channel = ((unsigned int)(channel - 1)) > 3 ? 3 : channel - 1;
-
-  volatile uint32_t *inj_regs[] = {&adc_reg->JDR1, &adc_reg->JDR2, &adc_reg->JDR3, &adc_reg->JDR4};
-  return *inj_regs[tmp_channel];
-}
-
-void adc_dual_sample() { ADC1->CR2 |= (1 << ADC_CR2_SWSTART_Pos); }
-
-uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type) {
-  if (adc_reg == NULL) return 0;
-
-  if (adc_reg->SR & 1 << interrupt_type) {
-    adc_reg->SR &= ~(1 << interrupt_type);
-
-    return 1;
+    while (!(adc_reg->SR & (1 << ADC_SR_JEOC_Pos)));
+    adc_reg->SR &= ~(1 << ADC_SR_JEOC_Pos);
   }
 
   return 0;
@@ -330,5 +293,4 @@ float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution) {
 
 // NOTE:
 // Missing:
-// EXTI11 trigger
 // Watchdog stuff

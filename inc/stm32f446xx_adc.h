@@ -9,6 +9,7 @@
 #define INC_STM32F446XX_ADC_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "stm32f446xx.h"
 
@@ -109,20 +110,40 @@ typedef struct {
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state);
 
 int adc_init(const ADCHandle_t *adc_handle);
+
 uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const ADCChannelSpeed_t channel_speed,
                            const ADCBlocking_t blocking);
 
 // For ADC Scan sample, handle the data with an interrupt, as blocking with EOC is disabled when DMA is involved
-uint8_t adc_scan_sample(ADC_TypeDef *adc_reg);
+inline static int adc_scan_sample(ADC_TypeDef *adc_reg) {
+  if (adc_reg == NULL) return -1;
+  adc_reg->CR2 |= (1 << ADC_CR2_SWSTART_Pos);
+  return 0;
+}
 
 // For ADC Inj scan sample, you can use blocking no problem
-uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
+int adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
 
-void adc_dual_sample();
+inline static void adc_dual_sample() { ADC1->CR2 |= (1 << ADC_CR2_SWSTART_Pos); }
 
-uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel);
+inline static uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel) {
+  if (adc_reg == NULL) return 0xFFFF;
 
-uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type);
+  // Change channel from 1-4 to 0-3 for array, and protect against values over the number of channels allowed
+  uint8_t tmp_channel = ((unsigned int)(channel - 1)) > 3 ? 3 : channel - 1;
+
+  volatile uint32_t *inj_regs[] = {&adc_reg->JDR1, &adc_reg->JDR2, &adc_reg->JDR3, &adc_reg->JDR4};
+  return *inj_regs[tmp_channel];
+}
+
+inline static uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type) {
+  if (adc_reg == NULL) return 0;
+  if (adc_reg->SR & 1 << interrupt_type) {
+    adc_reg->SR &= ~(1 << interrupt_type);
+    return 1;
+  }
+  return 0;
+}
 
 float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution);
 
