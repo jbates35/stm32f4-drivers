@@ -83,7 +83,7 @@ int adc_init(const ADCHandle_t *adc_handle) {
     uint8_t trigger_ext_sel = 0;
     if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_TIM)
       trigger_ext_sel = cfg->trigger_cfg.timer_sel;
-    else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_EXT11)
+    else if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_EXTI11)
       trigger_ext_sel = 0b1111;
     if (trigger_ext_sel > 0b1111) trigger_ext_sel = 0b1111;
 
