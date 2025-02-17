@@ -143,15 +143,18 @@ int adc_init(const ADCHandle_t *adc_handle) {
     }
 
     ADC->CCR = 0;
-    ADC->CCR |= (0b01 << ADC_CCR_DMA_Pos);
     ADC->CCR |= (1 << ADC_CCR_DDS_Pos);
+    ADC->CCR |= (0b00111 << ADC_CCR_MULTI_Pos);
 
-    uint8_t data_cfg = 0;
+    uint8_t data_dma_mode = 0;
     if (cfg->dual_cfg.data_cfg == ADC_DATA_CONFIG_SEQUENTIAL)
-      data_cfg = 0b00000;
+      data_dma_mode = 0b01;
     else if (cfg->dual_cfg.data_cfg == ADC_DATA_CONFIG_GROUPED)
-      data_cfg = 0b00110;
-    ADC->CCR |= (data_cfg << ADC_CCR_MULTI_Pos);
+      data_dma_mode = 0b10;
+    ADC->CCR |= (data_dma_mode << ADC_CCR_DMA_Pos);
+
+    // Turn ADC2 on before we exit the dual config section
+    ADC2->CR2 |= (1 << ADC_CR2_ADON_Pos);
   }
 
   adc_reg->CR2 |= (1 << ADC_CR2_ADON_Pos);
