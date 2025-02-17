@@ -233,6 +233,8 @@ uint8_t convert_channel_speed(ADCChannelSpeed_t speed) {
       return 0b100;
     case ADC_CHANNEL_SPEED_LOW:
       return 0b111;
+    default:
+      return 0b000;
   }
 }
 
