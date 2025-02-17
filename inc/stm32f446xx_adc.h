@@ -64,18 +64,44 @@ typedef enum { ADC_TEMPORBAT_DISABLE = 0, ADC_TEMPORBAT_TEMPERATURE, ADC_TEMPORB
 typedef enum { ADC_NON_BLOCKING = 0, ADC_BLOCKING } ADCBlocking_t;
 typedef enum { ADC_INTERRUPT_TYPE_AWD = 0, ADC_INTERRUPT_TYPE_EOC, ADC_INTERRUPT_TYPE_JEOC } ADCInterruptType_t;
 
+/**
+ * @brief  ADC Channel configuration structure definition
+ * 
+ * This structure is used to configure a specific ADC channel and its speed.
+ * 
+ * @param channel  Specifies the ADC channel will be sampled.
+ * @param speed    Specifies the speed of the ADC channel conversion.
+ */
 typedef struct {
   uint8_t channel;
   ADCChannelSpeed_t speed;
 } ADCChannel_t;
 
+/**
+ * @brief  ADC Scan Configuration structure definition
+ * 
+ * This structure is used to configure the ADC scan mode.
+ * 
+ * @param en                Specifies whether scan mode is enabled.
+ * @param sequence_length   Specifies the length of the scan sequence.
+ * @param sequence          Specifies the channels and their respective speeds in the scan sequence.
+ */
 typedef struct {
   ADCScanEn_t en;
   uint8_t sequence_length;
   ADCChannel_t sequence[16];
-  ADCChannelReversed_t reversed;
 } ADCScanConfig_t;
 
+/**
+ * @brief  ADC Trigger Configuration structure definition
+ * 
+ * This structure is used to configure the ADC trigger mode.
+ * 
+ * @param mode              Specifies the trigger mode (manual, continuous, timer, exti11).
+ * @param timer_sel         Specifies the timer selection for the trigger, if timer mode is chosen.
+ * @param edge_sel          Specifies the edge selection for the trigger, if exti11 or timer modes are chosen.
+ * @param channel_type_sel  Specifies the channel type selection for the trigger (normal channel or injected channel or both).
+ */
 typedef struct {
   ADCTriggerMode_t mode;
   ADCTriggerTimSel_t timer_sel;
@@ -83,25 +109,58 @@ typedef struct {
   ADCTriggerChanSel_t channel_type_sel;
 } ADCTriggerConfig_t;
 
+/**
+ * @brief  ADC Dual Mode Configuration structure definition
+ * 
+ * This structure is used to configure the ADC dual mode.
+ * 
+ * @param en        Specifies whether dual mode is enabled.
+ * @param data_cfg  Specifies the data configuration for dual mode (grouped or sequential).
+ */
 typedef struct {
   ADCDualModeEn_t en;
   ADCDataConfig_t data_cfg;
 } ADCDualConfig_t;
 
+/**
+ * @brief  ADC Configuration structure definition
+ * 
+ * This is the main structure used to configure the ADC.
+ * 
+ * @param resolution          Specifies the resolution of the ADC (6-bit to 12-bit)
+ * @param interrupt_en        Specifies whether interrupts are enabled.
+ * @param eoc_sel             Tells the chip when to declare EOC, whether after a single or grouped conversion.
+ * @param main_seq_chan_cfg   Specifies the main sequence channel configuration.
+ * @param main_inj_chan_cfg   Specifies the main injected channel configuration.
+ * @param slave_seq_chan_cfg  Specifies the slave sequence channel configuration.
+ * @param slave_inj_chan_cfg  Specifies the slave injected channel configuration.
+ * @param trigger_cfg         Specifies the way the ADC module is triggered.
+ * @param inj_autostart       Specifies whether injected channels auto-start when SWSTART is used.
+ * @param dual_cfg            Specifies the dual mode configuration.
+ * @param temp_or_bat_en      Specifies whether temperature or battery sensor is enabled.
+ */
 typedef struct {
-  ADCResolution_t resolution;          // Done
-  ADCInterruptEn_t interrupt_en;       // Done
-  ADCEOCSelect_t eoc_sel;              // Done
-  ADCScanConfig_t main_seq_chan_cfg;   // Done
-  ADCScanConfig_t main_inj_chan_cfg;   // Done
-  ADCScanConfig_t slave_seq_chan_cfg;  // Done
-  ADCScanConfig_t slave_inj_chan_cfg;  // Done
-  ADCTriggerConfig_t trigger_cfg;      // Not done
-  ADCInjAutostart_t inj_autostart;     // Done
-  ADCDualConfig_t dual_cfg;            // Done
+  ADCResolution_t resolution;
+  ADCInterruptEn_t interrupt_en;
+  ADCEOCSelect_t eoc_sel;
+  ADCScanConfig_t main_seq_chan_cfg;
+  ADCScanConfig_t main_inj_chan_cfg;
+  ADCScanConfig_t slave_seq_chan_cfg;
+  ADCScanConfig_t slave_inj_chan_cfg;
+  ADCTriggerConfig_t trigger_cfg;
+  ADCInjAutostart_t inj_autostart;
+  ADCDualConfig_t dual_cfg;
   ADCTempOrBatEn_t temp_or_bat_en;
 } ADCConfig_t;
 
+/**
+ * @brief  ADC Handle structure definition
+ * 
+ * This structure is used to handle the ADC configuration and address.
+ * 
+ * @param cfg   Specifies the ADC configuration.
+ * @param addr  Specifies the base address of the ADC peripheral (ADC1, ADC2, ADC3)
+ */
 typedef struct {
   ADCConfig_t cfg;
   ADC_TypeDef *addr;
