@@ -50,6 +50,11 @@ typedef enum {
 typedef enum { GPIO_PUPDR_NONE = 0, GPIO_PUPDR_PULLUP = 1, GPIO_PUPDR_PULLDOWN = 2 } GPIOPuPdRBit_t;
 
 /**
+* GPIO peripheral clock enable/disable
+*/
+typedef enum { GPIO_PERI_CLOCK_DISABLE = 0, GPIO_PERI_CLOCK_ENABLE } GPIOPeriClockEnable_t;
+
+/**
  * @brief GPIO pin configuration structure
  * @param pin_number: the pin associated with the particular port (i.e. 5 if PE5)
  * @param mode: the mode of the pin (i.e. input, output, etc.)
@@ -75,7 +80,7 @@ typedef struct {
 /*
  * Peripheral clock setup
  */
-void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_x, const uint8_t en_state);
+void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_x, const GPIOPeriClockEnable_t en_state);
 
 /*
  * Init and de-init of GPIO
