@@ -12,6 +12,16 @@ void init_normal_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, c
 void init_injected_scan_channels(ADC_TypeDef *adc, const ADCChannel_t *sequence, const uint8_t channel_count);
 uint8_t convert_channel_speed(ADCChannelSpeed_t speed);
 
+/**
+ * @brief  Controls the ADC peripheral clock.
+ * 
+ * This function enables or disables the clock for the specified ADC peripheral.
+ * 
+ * @param base_addr  Pointer to the base address of the ADC peripheral.
+ * @param en_state   Specifies whether to enable or disable the clock.
+ * 
+ * @return int  Returns 0 on success, or a negative error code on failure.
+ */
 int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t en_state) {
   // Avoid null pointer instantiations
   if (base_addr == NULL) return -1;
@@ -39,6 +49,15 @@ int adc_peri_clock_control(const ADC_TypeDef *base_addr, const ADCPeriClockEn_t 
   return 0;
 }
 
+/**
+ * @brief  Initializes the ADC peripheral.
+ * 
+ * This function configures the specified ADC peripheral according to the provided handle.
+ * 
+ * @param adc_handle  Pointer to an ADC handle structure that contains the configuration information for the specified ADC.
+ * 
+ * @return int  Returns 0 on success, or a negative error code on failure.
+ */
 int adc_init(const ADCHandle_t *adc_handle) {
   // Null pointer handling
   if (adc_handle == NULL || adc_handle->addr == NULL) return -1;
@@ -238,6 +257,20 @@ uint8_t convert_channel_speed(ADCChannelSpeed_t speed) {
   }
 }
 
+/**
+ * @brief  Performs a single ADC sample.
+ * 
+ * This function performs a single sample on the specified ADC channel.
+ * If the operation is blocking, it waits for the conversion to complete.
+ * Should not be used when ADC is configured in scan or dual mode.
+ * 
+ * @param adc_reg       Pointer to the ADC register structure.
+ * @param channel       Specifies the ADC channel to sample.
+ * @param channel_speed Specifies the speed of the ADC channel conversion.
+ * @param blocking      Specifies whether the function should block until the conversion is complete.
+ * 
+ * @return uint16_t  Returns the ADC conversion result, or 0xFFFF if a null pointer was passed as an argument.
+ */
 uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const ADCChannelSpeed_t channel_speed,
                            const ADCBlocking_t blocking) {
   if (adc_reg == NULL) return 0xFFFF;
@@ -265,7 +298,18 @@ uint16_t adc_single_sample(ADC_TypeDef *adc_reg, const uint8_t channel, const AD
   return adc_reg->DR;
 }
 
-uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) {
+/**
+ * @brief  Initiates an injected scan and sample operation on the specified ADC.
+ * 
+ * This function starts an injected scan and sample operation on the specified ADC.
+ * If the operation is blocking, it waits for the conversion to complete.
+ * 
+ * @param adc_reg  Pointer to the ADC register structure.
+ * @param blocking Specifies whether the function should block until the conversion is complete.
+ * 
+ * @return int  Returns 0 on success, or -1 if the ADC register pointer is NULL.
+ */
+int adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) {
   if (adc_reg == NULL) return -1;
 
   adc_reg->CR2 |= (1 << ADC_CR2_JSWSTART_Pos);
@@ -278,6 +322,17 @@ uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking) 
   return 0;
 }
 
+/**
+ * @brief  Converts ADC value to temperature in Celsius.
+ * 
+ * This function converts the given ADC value to a temperature in Celsius
+ * based on the specified ADC resolution.
+ * 
+ * @param adc_val    The ADC value to convert.
+ * @param resolution The resolution of the ADC.
+ * 
+ * @return float  Returns the temperature in Celsius.
+ */
 float convert_adc_to_temperature(uint16_t adc_val, ADCResolution_t resolution) {
   uint8_t bit_widths[] = {12, 10, 8, 6};
   uint8_t bit_width = bit_widths[(int)resolution];
