@@ -2,8 +2,6 @@
 
 #include <stdio.h>
 
-#include "stm32f446xx.h"
-
 #define ADCS {ADC1, ADC2, ADC3}
 #define ADC_RCC_POS {RCC_APB2ENR_ADC1EN_Pos, RCC_APB2ENR_ADC2EN_Pos, RCC_APB2ENR_ADC3EN_Pos}
 

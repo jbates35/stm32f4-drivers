@@ -2,8 +2,6 @@
 
 #include <stdio.h>
 
-#include "stm32f446xx.h"
-
 #define DMAS {DMA1, DMA2}
 #define DMA_RCC_POS {RCC_AHB1ENR_DMA1EN_Pos, RCC_AHB1ENR_DMA2EN_Pos}
 
