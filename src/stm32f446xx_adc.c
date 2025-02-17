@@ -77,6 +77,9 @@ int adc_init(const ADCHandle_t *adc_handle) {
     uint8_t edge_sel = cfg->trigger_cfg.edge_sel;
     if (edge_sel > 3) edge_sel = 3;
 
+    // Need code that handles if no edge was selected - we would probably want to default to rising edge
+    if (edge_sel == 0) edge_sel = 1;
+
     // Take care of what actually triggers the ext trig
     uint8_t trigger_ext_sel = 0;
     if ((cfg->trigger_cfg.mode) == ADC_TRIGGER_MODE_TIM)
