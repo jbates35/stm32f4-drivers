@@ -117,6 +117,8 @@ uint8_t adc_scan_sample(ADC_TypeDef *adc_reg);
 // For ADC Inj scan sample, you can use blocking no problem
 uint8_t adc_inj_scan_sample(ADC_TypeDef *adc_reg, const ADCBlocking_t blocking);
 
+void adc_dual_sample();
+
 uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel);
 
 uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type);

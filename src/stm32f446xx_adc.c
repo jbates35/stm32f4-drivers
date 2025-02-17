@@ -295,6 +295,8 @@ uint16_t adc_get_inj_data(ADC_TypeDef *adc_reg, const uint8_t channel) {
   return *inj_regs[tmp_channel];
 }
 
+void adc_dual_sample() { ADC1->CR2 |= (1 << ADC_CR2_SWSTART_Pos); }
+
 uint8_t adc_irq_handling(ADC_TypeDef *adc_reg, const ADCInterruptType_t interrupt_type) {
   if (adc_reg == NULL) return 0;
 
