@@ -8,6 +8,15 @@
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
+/**
+ * @brief  Controls the clock for the DMA peripheral.
+ * 
+ * This function enables or disables the clock for the specified DMA peripheral.
+ * 
+ * @param base_addr  Pointer to the base address of the DMA peripheral.
+ * @param en_state   State to enable or disable the clock.
+ * @return int       Returns 0 on success, -1 on error.
+ */
 int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t en_state) {
   // If null pointer, return error code
   if (base_addr == NULL) return -1;
@@ -33,6 +42,14 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t 
   return 0;
 }
 
+/**
+ * @brief  Initializes the DMA stream.
+ * 
+ * This function initializes the specified DMA stream with the provided configuration.
+ * 
+ * @param dma_handle  Pointer to the DMA handle structure.
+ * @return int        Returns 0 on success, -1 on error.
+ */
 int dma_stream_init(const DMAHandle_t *dma_handle) {
   if (dma_handle == NULL || dma_handle->p_stream_addr == NULL) return -1;
 
@@ -103,6 +120,16 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   return 0;
 }
 
+/**
+ * @brief  Handles DMA interrupts.
+ * 
+ * This function handles the specified DMA interrupt for the given stream.
+ * 
+ * @param base_addr       Pointer to the base address of the DMA peripheral.
+ * @param stream_num      Stream number of the DMA.
+ * @param interrupt_type  Type of the interrupt to handle.
+ * @return int            Returns 1 if the interrupt was handled, 0 otherwise.
+ */
 int dma_irq_handling(const DMA_TypeDef *base_addr, uint8_t stream_num, DMAInterruptType_t interrupt_type) {
   if (base_addr == NULL) return 0;
   if (stream_num > 8) return 0;
