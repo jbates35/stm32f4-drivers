@@ -115,9 +115,33 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
-  stream->CR |= (1 << DMA_SxCR_EN_Pos);
+  if (cfg->start_enabled == DMA_START_ENABLED) stream->CR |= (1 << DMA_SxCR_EN_Pos);
 
   return 0;
+}
+
+/**
+ * @brief Enable the DMA stream.
+ * 
+ * This function sets the enable bit in the control register of the specified DMA stream.
+ * 
+ * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
+ */
+void dma_en(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+  stream->CR |= (1 << DMA_SxCR_EN_Pos);
+}
+
+/**
+ * @brief Disable the DMA stream.
+ * 
+ * This function clears the enable bit in the control register of the specified DMA stream.
+ * 
+ * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
+ */
+void dma_dis(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
 }
 
 /**

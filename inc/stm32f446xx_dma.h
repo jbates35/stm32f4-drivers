@@ -20,6 +20,8 @@ typedef enum { DMA_BUFFER_FINITE = 0, DMA_BUFFER_CIRCULAR } DMACircBuffer_t;
 typedef enum { DMA_PERIPH_NO_FLOW_CONTROL = 0, DMA_PERIPH_FLOW_CONTROL = 1 } DMAFlowControl_t;
 typedef enum { DMA_INTERRUPT_DISABLE = 0, DMA_INTERRUPT_ENABLE } DMAInterruptEn_t;
 typedef enum { DMA_PERI_CLOCK_DISABL = 0, DMA_PERI_CLOCK_ENABLE } DMAPeriClockEn_t;
+typedef enum { DMA_START_DISABLED, DMA_START_ENABLED } DMAStartEnabled_t;
+
 typedef enum {
   DMA_INTERRUPT_TYPE_FIFO_ERROR = 0,
   DMA_INTERRUPT_TYPE_DIRECT_MODE_ERROR = 2,
@@ -74,7 +76,8 @@ typedef struct {
  * @param priority        DMA priority.
  * @param flow_control    Flow control setting.
  * @param circ_buffer     Circular buffer setting.
- * @param dma_elements    Number of DMA elements.
+ * @param dma_elements    Number of DMA elements to cycle through.
+ * @param start_enabled   Whether the DMA should enable after initialized.
  */
 typedef struct {
   IOHandle_t in;
@@ -87,6 +90,7 @@ typedef struct {
   DMAFlowControl_t flow_control;
   DMACircBuffer_t circ_buffer;
   uint16_t dma_elements;
+  DMAStartEnabled_t start_enabled;
 } DMAConfig_t;
 
 /**
@@ -124,6 +128,23 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t 
 int dma_stream_init(const DMAHandle_t *dma_handle);
 
 /**
+ * @brief Enable the DMA stream.
+ * 
+ * This function sets the enable bit in the control register of the specified DMA stream.
+ * 
+ * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
+ */
+void dma_stream_en(DMA_Stream_TypeDef *stream);
+
+/**
+ * @brief Disable the DMA stream.
+ * 
+ * This function clears the enable bit in the control register of the specified DMA stream.
+ * 
+ * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
+ */
+void dma_stream_dis(DMA_Stream_TypeDef *stream); /**
+
  * @brief  Handles DMA interrupts.
  * 
  * This function handles the specified DMA interrupt for the given stream.
