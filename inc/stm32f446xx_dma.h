@@ -9,6 +9,7 @@
 #define INC_STM32F446XX_DMA_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "stm32f446xx.h"
 
@@ -118,7 +119,6 @@ typedef struct {
 int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t en_state);
 
 /**
- * @brief  Initializes the DMA stream.
  * 
  * This function initializes the specified DMA stream with the provided configuration.
  * 
@@ -128,13 +128,31 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t 
 int dma_stream_init(const DMAHandle_t *dma_handle);
 
 /**
+ * @brief Start a DMA transaction.
+ * 
+ * This function is used when you need to start a transaction with a certain number of elements to transfer.
+ * 
+ * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
+ * @param buffer_size The number of elements to transfer before the DMA disables again.
+ */
+static inline void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size) {
+  if (stream == NULL) return;
+  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
+  stream->NDTR = (uint32_t)buffer_size;
+  stream->CR |= (1 << DMA_SxCR_EN_Pos);
+}
+
+/**
  * @brief Enable the DMA stream.
  * 
  * This function sets the enable bit in the control register of the specified DMA stream.
  * 
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  */
-void dma_stream_en(DMA_Stream_TypeDef *stream);
+static inline void dma_stream_en(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+  stream->CR |= (1 << DMA_SxCR_EN_Pos);
+}
 
 /**
  * @brief Disable the DMA stream.
@@ -143,8 +161,13 @@ void dma_stream_en(DMA_Stream_TypeDef *stream);
  * 
  * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
  */
-void dma_stream_dis(DMA_Stream_TypeDef *stream); /**
+static inline void dma_stream_dis(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
+}
 
+/**
+ * @brief  Initializes the DMA stream.
  * @brief  Handles DMA interrupts.
  * 
  * This function handles the specified DMA interrupt for the given stream.
