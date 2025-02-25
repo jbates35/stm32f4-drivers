@@ -135,12 +135,7 @@ int dma_stream_init(const DMAHandle_t *dma_handle);
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param buffer_size The number of elements to transfer before the DMA disables again.
  */
-static inline void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size) {
-  if (stream == NULL) return;
-  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
-  stream->NDTR = (uint32_t)buffer_size;
-  stream->CR |= (1 << DMA_SxCR_EN_Pos);
-}
+void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size);
 
 /**
  * @brief Enable the DMA stream.
@@ -149,10 +144,7 @@ static inline void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffe
  * 
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  */
-static inline void dma_stream_en(DMA_Stream_TypeDef *stream) {
-  if (stream == NULL) return;
-  stream->CR |= (1 << DMA_SxCR_EN_Pos);
-}
+void dma_stream_en(DMA_Stream_TypeDef *stream);
 
 /**
  * @brief Disable the DMA stream.
@@ -161,10 +153,7 @@ static inline void dma_stream_en(DMA_Stream_TypeDef *stream) {
  * 
  * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
  */
-static inline void dma_stream_dis(DMA_Stream_TypeDef *stream) {
-  if (stream == NULL) return;
-  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
-}
+void dma_stream_dis(DMA_Stream_TypeDef *stream);
 
 /**
  * @brief  Initializes the DMA stream.

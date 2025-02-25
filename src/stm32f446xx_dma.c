@@ -121,6 +121,62 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
 }
 
 /**
+ * @brief Start a DMA transaction.
+ * 
+ * This function is used when you need to start a transaction with a certain number of elements to transfer.
+ * 
+ * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
+ * @param buffer_size The number of elements to transfer before the DMA disables again.
+ */
+void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size) {
+  if (stream == NULL) return;
+
+  dma_stream_dis(stream);
+  stream->NDTR = (uint32_t)buffer_size;
+  dma_stream_en(stream);
+}
+
+/**
+ * @brief Enables the specified DMA stream.
+ *
+ * This function enables a given DMA stream after ensuring that all the flags
+ * associated with that stream are cleared. It first identifies the stream and
+ * its corresponding DMA controller, then clears the necessary flags before
+ * enabling the stream.
+ *
+ * @param stream Pointer to the DMA stream to be enabled. If the pointer is NULL,
+ *               the function returns immediately.
+ *
+ * @note The DMA stream will not be enabled unless all the flags for that stream
+ *       are cleared.
+ */
+void dma_stream_en(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+
+  // Get the clear reg index and the bit position so we can clear all the flags
+  // NOTE: The stream here will NOT turn on unless all the flags have been cleared
+  DMAStatusRegStruct_t clear_info = get_dma_sr_struct(stream);
+  if (!clear_info.success) return;
+  *clear_info.clear_reg |= (0x3F << clear_info.bit_offset);
+
+  // NOW, we can turn on the DMA stream
+  stream->CR |= (1 << DMA_SxCR_EN_Pos);
+}
+
+/**
+ * @brief Disable the DMA stream.
+ * 
+ * This function clears the enable bit in the control register of the specified DMA stream.
+ * 
+ * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
+ */
+void dma_stream_dis(DMA_Stream_TypeDef *stream) {
+  if (stream == NULL) return;
+  stream->CR &= ~(1 << DMA_SxCR_EN_Pos);
+}
+
+/**
+ * @brief  Initializes the DMA stream.
  * @brief  Handles DMA interrupts.
  * 
  * This function handles the specified DMA interrupt for the given stream.
