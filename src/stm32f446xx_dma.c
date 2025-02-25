@@ -4,9 +4,23 @@
 
 #define DMAS {DMA1, DMA2}
 #define DMA_RCC_POS {RCC_AHB1ENR_DMA1EN_Pos, RCC_AHB1ENR_DMA2EN_Pos}
+#define DMA_STREAMS                                                                                                   \
+  {                                                                                                                   \
+      DMA1_Stream0, DMA1_Stream1, DMA1_Stream2, DMA1_Stream3, DMA1_Stream4, DMA1_Stream5, DMA1_Stream6, DMA1_Stream7, \
+      DMA2_Stream0, DMA2_Stream1, DMA2_Stream2, DMA2_Stream3, DMA2_Stream4, DMA2_Stream5, DMA2_Stream6, DMA2_Stream7, \
+  }
 
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
+
+typedef struct {
+  volatile uint32_t *set_reg;
+  volatile uint32_t *clear_reg;
+  uint8_t bit_offset;
+  uint8_t success;
+} DMAStatusRegStruct_t;
+
+DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream);
 
 /**
  * @brief  Controls the clock for the DMA peripheral.
@@ -181,30 +195,85 @@ void dma_stream_dis(DMA_Stream_TypeDef *stream) {
  * 
  * This function handles the specified DMA interrupt for the given stream.
  * 
- * @param base_addr       Pointer to the base address of the DMA peripheral.
- * @param stream_num      Stream number of the DMA.
+ * @param stream          DMA Stream that the flag is associated with
  * @param interrupt_type  Type of the interrupt to handle.
  * @return int            Returns 1 if the interrupt was handled, 0 otherwise.
  */
-int dma_irq_handling(const DMA_TypeDef *base_addr, uint8_t stream_num, DMAInterruptType_t interrupt_type) {
-  if (base_addr == NULL) return 0;
-  if (stream_num > 8) return 0;
+int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_type) {
+  if (stream == NULL) return 0;
   if (interrupt_type == 1 || interrupt_type > 5) return 0;
 
-  const volatile uint32_t *set_regs[] = {&base_addr->LISR, &base_addr->HISR};
-  volatile uint32_t *clear_regs[] = {(volatile uint32_t *)&base_addr->LIFCR, (volatile uint32_t *)&base_addr->HIFCR};
+  DMAStatusRegStruct_t sr_info = get_dma_sr_struct(stream);
+  if (!sr_info.success) return 0;
 
-  uint8_t reg_ind = stream_num / 4;
-  uint8_t reg_bit_offset = (stream_num % 4) * 6;
-
-  if (reg_bit_offset >= 12) {
-    reg_bit_offset = reg_bit_offset + 4;
-  }
-
-  if (*set_regs[reg_ind] & (1 << (interrupt_type + reg_bit_offset))) {
-    *(clear_regs[reg_ind]) |= (1 << (interrupt_type + reg_bit_offset));
+  int bit_offset = sr_info.bit_offset;
+  if (*sr_info.set_reg & (1 << (interrupt_type + bit_offset))) {
+    *(sr_info.clear_reg) |= (1 << (interrupt_type + bit_offset));
     return 1;
   }
 
   return 0;
+}
+
+/**
+ * @brief Retrieves the status register structure for a given DMA stream.
+ *
+ * This function returns a structure containing pointers to the set and clear
+ * registers, as well as the bit offset for a specified DMA stream. It first
+ * identifies the stream and its corresponding DMA controller, then determines
+ * the appropriate registers and bit positions.
+ *
+ * @param stream Pointer to the DMA stream for which the status register structure
+ *               is to be retrieved. If the pointer is NULL, the function returns
+ *               a structure with default values.
+ * @return DMAStatusRegStruct_t Structure containing the set register, clear register,
+ *         bit offset, and success flag. If the stream is not found, the success flag
+ *         is set to 0.
+ */
+DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream) {
+  DMAStatusRegStruct_t return_struct = {.set_reg = NULL, .clear_reg = NULL, .success = 0};
+
+  if (stream == NULL) return return_struct;
+
+  // Make arrays of the DMA Streams and DMAs so we can get the stream number and the clear regs for those
+  volatile DMA_Stream_TypeDef *dma_streams[] = DMA_STREAMS;
+  volatile DMA_TypeDef *dmas[] = DMAS;
+  int dmas_total = SIZEOFP(dmas);
+  int streams_total = SIZEOFP(dma_streams);
+  int streams_per_dma = streams_total / dmas_total;
+
+  // In order for the DMA stream to be enabled, all the flags in that particular DMA stream must be cleared
+  int i = 0;
+  for (; i < streams_total; i++) {
+    if (dma_streams[i] == stream) break;
+  }
+
+  // This is in case we didn't find the stream
+  if (i > streams_total) return return_struct;
+
+  // Get the correct DMA reg (either DMA 1 or 2)
+  int dma_num = i / streams_per_dma;
+  int stream_num = i % streams_per_dma;
+  volatile DMA_TypeDef *dma_reg = dmas[dma_num];
+
+  // Get the set and clear flags regs for the struct
+  uint8_t reg_ind = stream_num / 4;
+  if (!reg_ind) {
+    return_struct.set_reg = &dma_reg->LISR;
+    return_struct.clear_reg = &dma_reg->LIFCR;
+
+  } else {
+    return_struct.set_reg = &dma_reg->HISR;
+    return_struct.clear_reg = &dma_reg->HIFCR;
+  }
+
+  // Get the bit offset that will be used to position the set or clear bits
+  uint8_t reg_bit_offset = (stream_num % 4) * 6;
+  if (reg_bit_offset >= 12) {
+    reg_bit_offset = reg_bit_offset + 4;
+  }
+  return_struct.bit_offset = reg_bit_offset;
+
+  return_struct.success = 1;
+  return return_struct;
 }

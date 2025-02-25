@@ -161,11 +161,10 @@ void dma_stream_dis(DMA_Stream_TypeDef *stream);
  * 
  * This function handles the specified DMA interrupt for the given stream.
  * 
- * @param base_addr       Pointer to the base address of the DMA peripheral.
- * @param stream_num      Stream number of the DMA.
+ * @param stream          DMA Stream that the flag is associated with
  * @param interrupt_type  Type of the interrupt to handle.
  * @return int            Returns 1 if the interrupt was handled, 0 otherwise.
  */
-int dma_irq_handling(const DMA_TypeDef *base_addr, uint8_t stream_num, DMAInterruptType_t interrupt_type);
+int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_type);
 
 #endif
