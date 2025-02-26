@@ -14,7 +14,7 @@
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
 typedef struct {
-  volatile uint32_t *set_reg;
+  volatile uint32_t *status_reg;
   volatile uint32_t *clear_reg;
   uint8_t bit_offset;
   uint8_t success;
@@ -169,9 +169,9 @@ void dma_stream_en(DMA_Stream_TypeDef *stream) {
 
   // Get the clear reg index and the bit position so we can clear all the flags
   // NOTE: The stream here will NOT turn on unless all the flags have been cleared
-  DMAStatusRegStruct_t clear_info = get_dma_sr_struct(stream);
-  if (!clear_info.success) return;
-  *clear_info.clear_reg |= (0x3F << clear_info.bit_offset);
+  DMAStatusRegStruct_t sr_info = get_dma_sr_struct(stream);
+  if (!sr_info.success) return;
+  *sr_info.clear_reg |= (0x3F << sr_info.bit_offset);
 
   // NOW, we can turn on the DMA stream
   stream->CR |= (1 << DMA_SxCR_EN_Pos);
@@ -207,8 +207,8 @@ int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_ty
   if (!sr_info.success) return 0;
 
   int bit_offset = sr_info.bit_offset;
-  if (*sr_info.set_reg & (1 << (interrupt_type + bit_offset))) {
-    *(sr_info.clear_reg) |= (1 << (interrupt_type + bit_offset));
+  if (*sr_info.status_reg & (1 << (interrupt_type + bit_offset))) {
+    *sr_info.clear_reg |= (1 << (interrupt_type + bit_offset));
     return 1;
   }
 
@@ -231,7 +231,7 @@ int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_ty
  *         is set to 0.
  */
 DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream) {
-  DMAStatusRegStruct_t return_struct = {.set_reg = NULL, .clear_reg = NULL, .success = 0};
+  DMAStatusRegStruct_t return_struct = {.status_reg = NULL, .clear_reg = NULL, .success = 0};
 
   if (stream == NULL) return return_struct;
 
@@ -259,11 +259,11 @@ DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream) {
   // Get the set and clear flags regs for the struct
   uint8_t reg_ind = stream_num / 4;
   if (!reg_ind) {
-    return_struct.set_reg = &dma_reg->LISR;
+    return_struct.status_reg = &dma_reg->LISR;
     return_struct.clear_reg = &dma_reg->LIFCR;
 
   } else {
-    return_struct.set_reg = &dma_reg->HISR;
+    return_struct.status_reg = &dma_reg->HISR;
     return_struct.clear_reg = &dma_reg->HIFCR;
   }
 
