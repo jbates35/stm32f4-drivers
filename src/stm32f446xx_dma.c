@@ -20,7 +20,7 @@ typedef struct {
   uint8_t success;
 } DMAStatusRegStruct_t;
 
-DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream);
+DMAStatusRegStruct_t get_dma_sr_struct(const DMA_Stream_TypeDef *stream);
 
 /**
  * @brief  Controls the clock for the DMA peripheral.
@@ -223,6 +223,8 @@ int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_ty
  * identifies the stream and its corresponding DMA controller, then determines
  * the appropriate registers and bit positions.
  *
+ * Codes ugly but it's more optimized this way than trying to do math on pointers.
+ *
  * @param stream Pointer to the DMA stream for which the status register structure
  *               is to be retrieved. If the pointer is NULL, the function returns
  *               a structure with default values.
@@ -230,49 +232,74 @@ int dma_irq_handling(DMA_Stream_TypeDef *stream, DMAInterruptType_t interrupt_ty
  *         bit offset, and success flag. If the stream is not found, the success flag
  *         is set to 0.
  */
-DMAStatusRegStruct_t get_dma_sr_struct(DMA_Stream_TypeDef *stream) {
+DMAStatusRegStruct_t get_dma_sr_struct(const DMA_Stream_TypeDef *stream) {
   DMAStatusRegStruct_t return_struct = {.status_reg = NULL, .clear_reg = NULL, .success = 0};
 
-  if (stream == NULL) return return_struct;
-
-  // Make arrays of the DMA Streams and DMAs so we can get the stream number and the clear regs for those
-  volatile DMA_Stream_TypeDef *dma_streams[] = DMA_STREAMS;
-  volatile DMA_TypeDef *dmas[] = DMAS;
-  int dmas_total = SIZEOFP(dmas);
-  int streams_total = SIZEOFP(dma_streams);
-  int streams_per_dma = streams_total / dmas_total;
-
-  // In order for the DMA stream to be enabled, all the flags in that particular DMA stream must be cleared
-  int i = 0;
-  for (; i < streams_total; i++) {
-    if (dma_streams[i] == stream) break;
+  if (stream == DMA1_Stream0) {
+    return_struct.clear_reg = &DMA1->LIFCR;
+    return_struct.status_reg = &DMA1->LISR;
+    return_struct.bit_offset = 0;
+  } else if (stream == DMA1_Stream1) {
+    return_struct.clear_reg = &DMA1->LIFCR;
+    return_struct.status_reg = &DMA1->LISR;
+    return_struct.bit_offset = 6;
+  } else if (stream == DMA1_Stream2) {
+    return_struct.clear_reg = &DMA1->LIFCR;
+    return_struct.status_reg = &DMA1->LISR;
+    return_struct.bit_offset = 16;
+  } else if (stream == DMA1_Stream3) {
+    return_struct.clear_reg = &DMA1->LIFCR;
+    return_struct.status_reg = &DMA1->LISR;
+    return_struct.bit_offset = 22;
+  } else if (stream == DMA1_Stream4) {
+    return_struct.clear_reg = &DMA1->HIFCR;
+    return_struct.status_reg = &DMA1->HISR;
+    return_struct.bit_offset = 0;
+  } else if (stream == DMA1_Stream5) {
+    return_struct.clear_reg = &DMA1->HIFCR;
+    return_struct.status_reg = &DMA1->HISR;
+    return_struct.bit_offset = 6;
+  } else if (stream == DMA1_Stream6) {
+    return_struct.clear_reg = &DMA1->HIFCR;
+    return_struct.status_reg = &DMA1->HISR;
+    return_struct.bit_offset = 16;
+  } else if (stream == DMA1_Stream7) {
+    return_struct.clear_reg = &DMA1->HIFCR;
+    return_struct.status_reg = &DMA1->HISR;
+    return_struct.bit_offset = 22;
+  } else if (stream == DMA2_Stream0) {
+    return_struct.clear_reg = &DMA2->LIFCR;
+    return_struct.status_reg = &DMA2->LISR;
+    return_struct.bit_offset = 0;
+  } else if (stream == DMA2_Stream1) {
+    return_struct.clear_reg = &DMA2->LIFCR;
+    return_struct.status_reg = &DMA2->LISR;
+    return_struct.bit_offset = 6;
+  } else if (stream == DMA2_Stream2) {
+    return_struct.clear_reg = &DMA2->LIFCR;
+    return_struct.status_reg = &DMA2->LISR;
+    return_struct.bit_offset = 16;
+  } else if (stream == DMA2_Stream3) {
+    return_struct.clear_reg = &DMA2->LIFCR;
+    return_struct.status_reg = &DMA2->LISR;
+    return_struct.bit_offset = 22;
+  } else if (stream == DMA2_Stream4) {
+    return_struct.clear_reg = &DMA2->HIFCR;
+    return_struct.status_reg = &DMA2->HISR;
+    return_struct.bit_offset = 0;
+  } else if (stream == DMA2_Stream5) {
+    return_struct.clear_reg = &DMA2->HIFCR;
+    return_struct.status_reg = &DMA2->HISR;
+    return_struct.bit_offset = 6;
+  } else if (stream == DMA2_Stream6) {
+    return_struct.clear_reg = &DMA2->HIFCR;
+    return_struct.status_reg = &DMA2->HISR;
+    return_struct.bit_offset = 16;
+  } else if (stream == DMA2_Stream7) {
+    return_struct.clear_reg = &DMA2->HIFCR;
+    return_struct.status_reg = &DMA2->HISR;
+    return_struct.bit_offset = 22;
   }
-
-  // This is in case we didn't find the stream
-  if (i > streams_total) return return_struct;
-
-  // Get the correct DMA reg (either DMA 1 or 2)
-  int dma_num = i / streams_per_dma;
-  int stream_num = i % streams_per_dma;
-  volatile DMA_TypeDef *dma_reg = dmas[dma_num];
-
-  // Get the set and clear flags regs for the struct
-  uint8_t reg_ind = stream_num / 4;
-  if (!reg_ind) {
-    return_struct.status_reg = &dma_reg->LISR;
-    return_struct.clear_reg = &dma_reg->LIFCR;
-
-  } else {
-    return_struct.status_reg = &dma_reg->HISR;
-    return_struct.clear_reg = &dma_reg->HIFCR;
-  }
-
-  // Get the bit offset that will be used to position the set or clear bits
-  uint8_t reg_bit_offset = (stream_num % 4) * 6;
-  if (reg_bit_offset >= 12) {
-    reg_bit_offset = reg_bit_offset + 4;
-  }
-  return_struct.bit_offset = reg_bit_offset;
 
   return_struct.success = 1;
   return return_struct;
