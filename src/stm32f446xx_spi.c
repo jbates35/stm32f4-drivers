@@ -1,16 +1,34 @@
 #include "stm32f446xx_spi.h"
 
-#include <stdio.h>
+#include <string.h>
 
 #include "stm32f446xx.h"
 
+#define SPIS_NUM 4
 #define SPIS {SPI1, SPI2, SPI3, SPI4}
 #define SPIS_RCC_REGS {&RCC->APB2ENR, &RCC->APB1ENR, &RCC->APB1ENR, &RCC->APB2ENR}
 #define SPIS_RCC_POS {RCC_APB2ENR_SPI1EN_Pos, RCC_APB1ENR_SPI2EN_Pos, RCC_APB1ENR_SPI3EN_Pos, RCC_APB2ENR_SPI4EN}
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
-SPIConfig_t spi1_config = {0}, spi2_config = {0}, spi3_config = {0};
+// For keeping track especially when it comes to interrupt instanstiations
+SPIConfig_t spi_configs[SPIS_NUM] = {0};
+
+/**
+ * @brief  Helper function to get the correct SPI Config
+ *
+ * @param spi_base_addr The SPI peripheral, base address.
+ *
+ * @return SPIConfig_t  Returns the :q
+
+ */
+static inline SPIConfig_t *get_spi_config(const SPI_TypeDef *spi_base_addr) {
+  const volatile SPI_TypeDef *spi_addrs[SPIS_NUM] = SPIS;
+  for (int i = 0; i < SPIS_NUM; i++) {
+    if (spi_addrs[i] == spi_base_addr) return &spi_configs[i];
+  }
+  return NULL;
+}
 
 int spi_peri_clock_control(const SPI_TypeDef *p_spi_addr, const SPIPeriClockEnable_t en_state) {
   if (p_spi_addr == NULL) return -1;  // Error: null pointer
@@ -92,6 +110,10 @@ int spi_init(const SPIHandle_t *p_spi_handle) {
   // Enable SPI
   spi->CR1 |= (1 << SPI_CR1_SPE_Pos);
 
+  // Record the config for future use
+  SPIConfig_t *recorded_cfg = get_spi_config(spi);
+  memcpy(recorded_cfg, cfg, sizeof(*cfg));
+
   return 0;
 }
 
@@ -170,3 +192,5 @@ int spi_send_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_tx_buffer, const uin
 int spi_receive_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_rx_buffer, const uint32_t len) { return 0; }
 
 int spi_irq_handling(const SPI_TypeDef *p_spi_addr) { return 0; }
+
+////////////// Helper Functions ////////////////
