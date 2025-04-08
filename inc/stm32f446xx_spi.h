@@ -6,7 +6,10 @@
 #include "stm32f446xx.h"
 
 // SPI Master vs slave mode select:
-typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SPIDeviceMode_t;
+typedef enum {
+  SPI_DEVICE_MODE_SLAVE = 0,
+  SPI_DEVICE_MODE_MASTER
+} SPIDeviceMode_t;
 
 // Bus configuration (simplex duplex etc)
 typedef enum {
@@ -18,18 +21,15 @@ typedef enum {
 
 // Data frame format (i.e. 4-bit frames, 8-bit frames, etc)
 typedef enum {
-  SPI_DFF_4_BIT = 0x3,
-  SPI_DFF_8_BIT = 0x7,
-  SPI_DFF_16_BIT = 0xf,
-  SPI_DFF_24_BIT = 0x17,
-  SPI_DFF_32_BIT = 0x1f
+  SPI_DFF_8_BIT = 0,
+  SPI_DFF_16_BIT,
 } SPIDff_t;
 
-// Clock phase angle (i.e. if cpol is active high, first edge = rising edge, second edge = falling edge)
-typedef enum { SPI_CPHA_CAPTURE_FIRST_EDGE = 0, SPI_CPHA_CAPTURE_SECOND_EDGE } SPICpha_t;
-
-// Clock polarity (does it start with a low or a high? Used with clock phase to dictate rising edge of acctive edge)
-typedef enum { SPI_CPOL_CAPTURE_ACTIVE_HIGH = 0, SPI_CPOL_CAPTURE_ACTIVE_LOW } SPICpol_t;
+// Capture on rising edge while data stable, or falling edge
+typedef enum {
+  SPI_CAPTURE_MODE_RISING = 0,
+  SPI_CAPTURE_MODE_FALLING
+} SPICaptureMode_t;
 
 // Software slave management (enable or disable)
 typedef enum { SPI_SSM_DISABLE = 0, SPI_SSM_ENABLE } SPISsm_t;
@@ -61,17 +61,17 @@ typedef struct {
   SPIDeviceMode_t device_mode;
   SPIBusConfig_t bus_config;
   SPIDff_t dff;
-  SPICpol_t cpol;
-  SPICpha_t cpha;
+  SPICaptureMode_t capture_mode;
   SPISsm_t ssm;
   SPIBaudDivisor_t baud_divisor;
 } SPIConfig_t;
 
 /**
-  * @brief Overall handler which is used in the init
-  * @param p_spi_addr The SPI peripheral being used (SPI1, SPI2, ... SPI4)
-  * @param cfg The configuration struct used to dictate how the SPI bus should be set up
-**/
+ * @brief Overall handler which is used in the init
+ * @param p_spi_addr The SPI peripheral being used (SPI1, SPI2, ... SPI4)
+ * @param cfg The configuration struct used to dictate how the SPI bus should be
+ *set up
+ **/
 typedef struct {
   SPI_TypeDef *p_spi_addr;
   SPIConfig_t cfg;
@@ -83,9 +83,11 @@ int spi_init(const SPIHandle_t *p_spi_handle);
 
 int spi_deinit(const SPI_TypeDef *p_spi_addr);
 
-int spi_send_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_tx_buffer, const uint32_t len);
+int spi_send_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_tx_buffer,
+                  const uint32_t len);
 
-int spi_receive_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_rx_buffer, const uint32_t len);
+int spi_receive_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_rx_buffer,
+                     const uint32_t len);
 
 int spi_irq_handling(const SPI_TypeDef *p_spi_addr);
 
