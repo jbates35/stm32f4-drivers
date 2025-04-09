@@ -138,6 +138,8 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
  * @brief Start a DMA transaction.
  * 
  * This function is used when you need to start a transaction with a certain number of elements to transfer.
+ *
+ * Note this function (at 16MHz) takes like 50us
  * 
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param buffer_size The number of elements to transfer before the DMA disables again.

@@ -6,10 +6,7 @@
 #include "stm32f446xx.h"
 
 // SPI Master vs slave mode select:
-typedef enum {
-  SPI_DEVICE_MODE_SLAVE = 0,
-  SPI_DEVICE_MODE_MASTER
-} SPIDeviceMode_t;
+typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SPIDeviceMode_t;
 
 // Bus configuration (simplex duplex etc)
 typedef enum {
@@ -26,10 +23,7 @@ typedef enum {
 } SPIDff_t;
 
 // Capture on rising edge while data stable, or falling edge
-typedef enum {
-  SPI_CAPTURE_MODE_RISING = 0,
-  SPI_CAPTURE_MODE_FALLING
-} SPICaptureMode_t;
+typedef enum { SPI_CAPTURE_MODE_RISING = 0, SPI_CAPTURE_MODE_FALLING } SPICaptureMode_t;
 
 // Software slave management (enable or disable)
 typedef enum { SPI_SSM_DISABLE = 0, SPI_SSM_ENABLE } SPISsm_t;
@@ -83,11 +77,9 @@ int spi_init(const SPIHandle_t *p_spi_handle);
 
 int spi_deinit(const SPI_TypeDef *p_spi_addr);
 
-int spi_send_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_tx_buffer,
-                  const uint32_t len);
+int spi_send_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_tx_buffer, const uint32_t len);
 
-int spi_receive_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_rx_buffer,
-                     const uint32_t len);
+int spi_receive_data(const SPI_TypeDef *p_spi_addr, uint8_t *p_rx_buffer, const uint32_t len);
 
 int spi_irq_handling(const SPI_TypeDef *p_spi_addr);
 
