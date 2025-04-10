@@ -59,6 +59,7 @@ typedef struct {
   SPICaptureMode_t capture_mode;
   SPISsm_t ssm;
   SPIInterruptSetup_t interrupt_setup;
+  SPIDMASetup_t dma_setup;
   SPIBaudDivisor_t baud_divisor;
 } SPIConfig_t;
 
@@ -69,26 +70,28 @@ typedef struct {
  *set up
  **/
 typedef struct {
-  SPI_TypeDef *p_spi_addr;
+  SPI_TypeDef *addr;
   SPIConfig_t cfg;
 } SPIHandle_t;
 
-int spi_peri_clock_control(const SPI_TypeDef *p_spi_addr, const SPIPeriClockEnable_t en_state);
+int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state);
 
-int spi_init(const SPIHandle_t *p_spi_handle);
+int spi_init(const SPIHandle_t *spi_handle);
 
-int spi_deinit(const SPI_TypeDef *p_spi_addr);
+int spi_deinit(const SPI_TypeDef *spi_reg);
 
-int spi_tx_byte(SPI_TypeDef *spi_port, const uint16_t tx_byte);
+int spi_tx_byte(SPI_TypeDef *spi_reg, const uint16_t tx_byte);
 
-int spi_tx_word(SPI_TypeDef *spi_port, const void *tx_buffer, int len);
+int spi_tx_word(SPI_TypeDef *spi_reg, const void *tx_buffer, int len);
 
-uint16_t spi_rx_byte(SPI_TypeDef *spi_port);
+uint16_t spi_rx_byte(SPI_TypeDef *spi_reg);
 
-int spi_rx_word(SPI_TypeDef *spi_port, uint8_t *rx_buffer, int len);
+int spi_rx_word(SPI_TypeDef *spi_reg, uint8_t *rx_buffer, int len);
 
-int spi_full_duplex_transfer(SPI_TypeDef *spi_port, void *tx_buffer, void *rx_buffer, int len);
+int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buffer, int len);
 
-int spi_irq_handling(const SPI_TypeDef *p_spi_addr);
+int spi_setup_interrupt(const SPI_TypeDef *spi_reg, SPIInterruptType_t type, uint16_t length);
+
+int spi_irq_handling(const SPI_TypeDef *spi_reg);
 
 #endif
