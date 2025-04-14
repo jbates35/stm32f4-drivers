@@ -91,7 +91,7 @@ int spi_init(const SPIHandle_t *spi_handle) {
   }
 
   // Baud rate
-  spi_reg->CR1 |= ((cfg->baud_divisor & 0b111) >> SPI_CR1_BR_Pos);
+  spi_reg->CR1 |= ((cfg->baud_divisor & 0b111) << SPI_CR1_BR_Pos);
 
   // Data frame mode
   uint8_t data_frame = cfg->dff ? 1 : 0;
