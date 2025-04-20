@@ -29,6 +29,7 @@ typedef enum {
 typedef enum { SPI_INTERRUPT_DISABLE = 0, SPI_INTERRUPT_ENABLE } SPIInterruptEn_t;
 typedef enum { SPI_INTERRUPT_TYPE_TX = 0, SPI_INTERRUPT_TYPE_RX } SPIInterruptType_t;
 typedef enum { SPI_DMA_DISABLE = 0, SPI_DMA_ENABLE } SPIDMAEnable_t;
+typedef enum { SPI_INTERRUPT_READY = 0, SPI_INTERRUPT_BUSY } SPIInterruptStatus_t;
 
 typedef struct {
   SPIInterruptEn_t en;
@@ -90,8 +91,16 @@ int spi_rx_word(SPI_TypeDef *spi_reg, uint8_t *rx_buffer, int len);
 
 int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buffer, int len);
 
-int spi_setup_interrupt(const SPI_TypeDef *spi_reg, SPIInterruptType_t type, uint16_t length);
+int spi_enable_interrupt(SPI_TypeDef *spi_reg, SPIInterruptType_t type, SPIInterruptEn_t en);
+int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, char *buffer, const int len);
 
 int spi_irq_handling(const SPI_TypeDef *spi_reg);
 
+int set_spi_tx_interrupt_word(const SPI_TypeDef *spi_reg, const char *tx_word, const int len);
+int set_spi_rx_interrupt_word(const SPI_TypeDef *spi_reg, volatile char *rx_word);
+int set_spi_rx_interrupt_length(const SPI_TypeDef *spi_reg, const int len);
+SPIInterruptStatus_t get_spi_interrupt_tx_status(const SPI_TypeDef *spi_reg);
+SPIInterruptStatus_t get_spi_interrupt_rx_status(const SPI_TypeDef *spi_reg);
+int set_spi_interrupt_tx_callback(const SPI_TypeDef *spi_reg, volatile void (*fnc_ptr)(void));
+int set_spi_interrupt_rx_callback(const SPI_TypeDef *spi_reg, volatile void (*fnc_ptr)(void));
 #endif
