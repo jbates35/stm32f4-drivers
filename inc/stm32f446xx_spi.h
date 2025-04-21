@@ -26,20 +26,24 @@ typedef enum {
   SPI_BAUD_DIVISOR_128,
   SPI_BAUD_DIVISOR_256
 } SPIBaudDivisor_t;
-typedef enum { SPI_INTERRUPT_DISABLE = 0, SPI_INTERRUPT_ENABLE } SPIInterruptEn_t;
 typedef enum { SPI_INTERRUPT_TYPE_TX = 0, SPI_INTERRUPT_TYPE_RX } SPIInterruptType_t;
-typedef enum { SPI_DMA_DISABLE = 0, SPI_DMA_ENABLE } SPIDMAEnable_t;
-typedef enum { SPI_INTERRUPT_READY = 0, SPI_INTERRUPT_BUSY } SPIInterruptStatus_t;
+typedef enum {
+  SPI_INTERRUPT_READY = 0,
+  SPI_INTERRUPT_BUSY,
+  SPI_INTERRUPT_DONE,
+  SPI_INTERRUPT_INVALID
+} SPIInterruptStatus_t;
+typedef enum { SPI_DISABLE = 0, SPI_ENABLE } SPIEnable_t;
 
 typedef struct {
-  SPIInterruptEn_t en;
+  SPIEnable_t en;
   SPIInterruptType_t type;
   uint16_t length;
 } SPIInterruptSetup_t;
 
 typedef struct {
-  SPIDMAEnable_t tx;
-  SPIDMAEnable_t rx;
+  SPIEnable_t tx;
+  SPIEnable_t rx;
 } SPIDMASetup_t;
 
 /**
@@ -62,6 +66,7 @@ typedef struct {
   SPIInterruptSetup_t interrupt_setup;
   SPIDMASetup_t dma_setup;
   SPIBaudDivisor_t baud_divisor;
+  SPIEnable_t enable_on_init;
 } SPIConfig_t;
 
 /**
@@ -75,32 +80,23 @@ typedef struct {
   SPIConfig_t cfg;
 } SPIHandle_t;
 
+// SPI Inits
 int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state);
-
 int spi_init(const SPIHandle_t *spi_handle);
-
 int spi_deinit(const SPI_TypeDef *spi_reg);
 
+// Blocking SPI calls
 int spi_tx_byte(SPI_TypeDef *spi_reg, const uint16_t tx_byte);
-
 int spi_tx_word(SPI_TypeDef *spi_reg, const void *tx_buffer, int len);
-
 uint16_t spi_rx_byte(SPI_TypeDef *spi_reg);
-
 int spi_rx_word(SPI_TypeDef *spi_reg, uint8_t *rx_buffer, int len);
-
 int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buffer, int len);
 
-int spi_enable_interrupt(SPI_TypeDef *spi_reg, SPIInterruptType_t type, SPIInterruptEn_t en);
+// Interrupt related SPI calls
+int spi_enable_interrupt(SPI_TypeDef *spi_reg, SPIInterruptType_t type, SPIEnable_t en);
 int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, char *buffer, const int len);
-
-int spi_irq_handling(const SPI_TypeDef *spi_reg);
-
-int set_spi_tx_interrupt_word(const SPI_TypeDef *spi_reg, const char *tx_word, const int len);
-int set_spi_rx_interrupt_word(const SPI_TypeDef *spi_reg, volatile char *rx_word);
-int set_spi_rx_interrupt_length(const SPI_TypeDef *spi_reg, const int len);
-SPIInterruptStatus_t get_spi_interrupt_tx_status(const SPI_TypeDef *spi_reg);
-SPIInterruptStatus_t get_spi_interrupt_rx_status(const SPI_TypeDef *spi_reg);
-int set_spi_interrupt_tx_callback(const SPI_TypeDef *spi_reg, volatile void (*fnc_ptr)(void));
-int set_spi_interrupt_rx_callback(const SPI_TypeDef *spi_reg, volatile void (*fnc_ptr)(void));
+SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type);
+int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, void (*fnc_ptr)(void));
+int spi_irq_handling(SPI_TypeDef *spi_reg);
+int spi_start_interrupt_transfer(SPI_TypeDef *spi_reg);
 #endif
