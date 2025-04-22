@@ -274,6 +274,9 @@ int spi_irq_handling(SPI_TypeDef *spi_reg) {
     tx_buf_info->status = SPI_INTERRUPT_READY;
     rx_buf_info->status = SPI_INTERRUPT_READY;
 
+    // TODO: MAke cyclical optional I suppose
+    spi_reg->CR1 &= ~(1 << SPI_CR1_SPE_Pos);
+
     return 1;
   }
 
