@@ -255,7 +255,17 @@ SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg, const 
 int spi_irq_handling(SPI_TypeDef *spi_reg) {
   if (spi_reg == NULL) return -1;
 
-  volatile SPIInterruptBuffer_t *tx_buf_info = get_spi_interrupt_info(spi_reg, SPI_INTERRUPT_TYPE_TX);
+  if (spi_reg->SR & (1 << SPI_SR_RXNE_Pos)) {
+    spi_reg->SR &= ~(1 << SPI_SR_RXNE_Pos);
+    return 1;
+  }
+
+  if (spi_reg->SR & (1 << SPI_SR_TXE_Pos)) {
+    spi_reg->SR &= ~(1 << SPI_SR_TXE_Pos);
+    return 2;
+  }
+
+  /* volatile SPIInterruptBuffer_t *tx_buf_info = get_spi_interrupt_info(spi_reg, SPI_INTERRUPT_TYPE_TX);
   volatile SPIInterruptBuffer_t *rx_buf_info = get_spi_interrupt_info(spi_reg, SPI_INTERRUPT_TYPE_RX);
   if (tx_buf_info == NULL || rx_buf_info == NULL) return -1;
 
@@ -278,7 +288,7 @@ int spi_irq_handling(SPI_TypeDef *spi_reg) {
     spi_reg->CR1 &= ~(1 << SPI_CR1_SPE_Pos);
 
     return 1;
-  }
+  } */
 
   return 0;
 }
