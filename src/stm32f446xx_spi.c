@@ -263,10 +263,10 @@ SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg) {
   return interrupt_info->status;
 }
 
-static inline SPIInterruptType_t get_interrupt_status(SPI_TypeDef *spi_reg) {
+SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg) {
   volatile SPIInterruptInfo_t *spi_info = get_spi_int_info(spi_reg);
 
-  uint8_t spi_rx_busy = ((spi_reg->CR2 & SPI_CR2_RXNEIE_Pos) && spi_info->status == SPI_INTERRUPT_BUSY);
+  uint8_t spi_rx_busy = ((spi_reg->CR2 & (1 << SPI_CR2_RXNEIE_Pos)) && (spi_info->status == SPI_INTERRUPT_BUSY));
 
   if (spi_reg->SR & (1 << SPI_SR_TXE_Pos) && !spi_rx_busy) {
     spi_info->status = SPI_INTERRUPT_BUSY;
@@ -277,9 +277,11 @@ static inline SPIInterruptType_t get_interrupt_status(SPI_TypeDef *spi_reg) {
     spi_info->status = SPI_INTERRUPT_READY;
     return SPI_INTERRUPT_TYPE_RX;
   }
+
+  return SPI_INTERRUPT_TYPE_NONE;
 }
 
-int spi_irq_handling(SPI_TypeDef *spi_reg) {
+int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
   if (spi_reg == NULL) return -1;
 
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
@@ -290,7 +292,9 @@ int spi_irq_handling(SPI_TypeDef *spi_reg) {
   // Get the amount of bytes per frame - Should be 1 bytes, or 2 bytes (dff=1)
   uint8_t dff_bytes = ((spi_reg->CR1 >> SPI_CR1_DFF_Pos) & 0b1) + 1;
 
-  if (get_interrupt_status(spi_reg) == SPI_INTERRUPT_TYPE_TX) {
+  SPIInterruptType_t int_status = spi_irq_handling(spi_reg);
+
+  if (int_status == SPI_INTERRUPT_TYPE_TX) {
     // Get next element of array and put it in DR
     uint8_t tx_byte;
 
@@ -306,7 +310,7 @@ int spi_irq_handling(SPI_TypeDef *spi_reg) {
     tx_buf_info->eles_left -= dff_bytes;
   }
 
-  if (get_interrupt_status(spi_reg) == SPI_INTERRUPT_TYPE_RX) {
+  if (int_status == SPI_INTERRUPT_TYPE_RX) {
     // Get element from DR and parse it, add it into rx buff
     uint16_t rx_byte = spi_reg->DR;
 
@@ -320,7 +324,10 @@ int spi_irq_handling(SPI_TypeDef *spi_reg) {
   }
 
   // Might not take care of half-duplex protocol well
-  if (!tx_buf_info->eles_left || !rx_buf_info->eles_left) {
+  uint8_t tx_is_done = (tx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
+  uint8_t rx_is_done = (rx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
+
+  if (tx_is_done || rx_is_done) {
     int_info->status = SPI_INTERRUPT_DONE;
 
     while (spi_reg->SR & SPI_SR_BSY_Pos);
