@@ -330,8 +330,8 @@ int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
   if (tx_is_done || rx_is_done) {
     int_info->status = SPI_INTERRUPT_DONE;
 
-    while (spi_reg->SR & SPI_SR_BSY_Pos);
-    spi_reg->CR1 &= ~(1 << SPI_CR1_SPE_Pos);
+    spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_TX, SPI_DISABLE);
+    spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_RX, SPI_DISABLE);
 
     int_info->callback();
 
