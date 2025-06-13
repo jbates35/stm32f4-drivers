@@ -327,7 +327,7 @@ int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
   uint8_t tx_is_done = (tx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
   uint8_t rx_is_done = (rx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
 
-  if (tx_is_done || rx_is_done) {
+  if (tx_is_done && rx_is_done) {
     int_info->status = SPI_INTERRUPT_DONE;
 
     spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_TX, SPI_DISABLE);
@@ -350,7 +350,7 @@ int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
   return 0;
 }
 
-int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, void (*fnc_ptr)(void)) {
+int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, void (*fnc_ptr)(void)) {
   if (spi_reg == NULL) return -1;
 
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
@@ -367,7 +367,8 @@ int spi_start_interrupt_transfer(SPI_TypeDef *spi_reg) {
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
   int_info->status = SPI_INTERRUPT_READY;
 
-  spi_reg->CR1 |= (1 << SPI_CR1_SPE_Pos);
+  spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_TX, SPI_ENABLE);
+  spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_RX, SPI_ENABLE);
 
   return 0;
 }
