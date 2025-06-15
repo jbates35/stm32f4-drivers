@@ -24,6 +24,7 @@ typedef struct {
   SPIInterruptBuffer_t tx;
   SPIInterruptBuffer_t rx;
   SPIInterruptStatus_t status;
+  SPIInterruptCircular_t circular;
   void (*callback)(void);
 } SPIInterruptInfo_t;
 volatile SPIInterruptInfo_t spi_interrupt_info[SPIS_NUM] = {0};
@@ -137,14 +138,6 @@ int spi_init(const SPIHandle_t *spi_handle) {
     spi_reg->CR1 |= (1 << SPI_CR1_CPHA_Pos);
   }
 
-  // Enable interrupts
-  if (cfg->interrupt_setup.en == SPI_ENABLE) {
-    if (cfg->interrupt_setup.type == SPI_INTERRUPT_TYPE_TX)
-      spi_reg->CR2 |= (1 << SPI_CR2_TXEIE_Pos);
-    else if (cfg->interrupt_setup.type == SPI_INTERRUPT_TYPE_RX)
-      spi_reg->CR2 |= (1 << SPI_CR2_RXNEIE_Pos);
-  }
-
   // Enable DMA
   if (cfg->dma_setup.tx == SPI_ENABLE) spi_reg->CR2 |= (1 << SPI_CR2_TXDMAEN_Pos);
   if (cfg->dma_setup.rx == SPI_ENABLE) spi_reg->CR2 |= (1 << SPI_CR2_RXDMAEN_Pos);
@@ -248,6 +241,20 @@ int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t typ
   return 0;
 }
 
+int spi_set_circular_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptCircular_t circular_en) {
+  if (spi_reg == NULL) return -1;
+
+  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
+  if (int_info == NULL) return -2;
+
+  if (circular_en == SPI_INTERRUPT_NONCIRCULAR)
+    int_info->circular = SPI_INTERRUPT_NONCIRCULAR;
+  else
+    int_info->circular = SPI_INTERRUPT_CIRCULAR;
+
+  return 0;
+}
+
 SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg) {
   if (spi_reg == NULL) return SPI_INTERRUPT_INVALID;
 
@@ -336,8 +343,9 @@ int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
     rx_buf_info->buffer = rx_buf_info->buffer_start;
     rx_buf_info->eles_left = rx_buf_info->len;
 
-    // If needs to be circular, take care of logic here (we would re-enable .. or just call start_interrupt_transfer)
-    //
+    if (int_info->circular == SPI_INTERRUPT_CIRCULAR) {
+      spi_start_int_word_transfer(spi_reg);
+    }
 
     return 1;
   }
@@ -366,6 +374,20 @@ int spi_start_int_word_transfer(SPI_TypeDef *spi_reg) {
   if (int_info->tx.en) int_word |= (1 << SPI_CR2_TXEIE_Pos);
   if (int_info->rx.en) int_word |= (1 << SPI_CR2_RXNEIE_Pos);
 
+  spi_reg->CR2 |= int_word;
+
+  return (int_word != 0);
+}
+
+int spi_start_int_transfer(SPI_TypeDef *spi_reg, SPIEnable_t tx, SPIEnable_t rx) {
+  if (spi_reg == NULL) return -1;
+
+  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
+  int_info->status = SPI_INTERRUPT_READY;
+
+  uint8_t int_word = 0;
+  if (tx == SPI_ENABLE) int_word |= (1 << SPI_CR2_TXEIE_Pos);
+  if (rx == SPI_ENABLE) int_word |= (1 << SPI_CR2_RXNEIE_Pos);
   spi_reg->CR2 |= int_word;
 
   return (int_word != 0);

@@ -33,13 +33,8 @@ typedef enum {
   SPI_INTERRUPT_DONE,
   SPI_INTERRUPT_INVALID
 } SPIInterruptStatus_t;
+typedef enum { SPI_INTERRUPT_NONCIRCULAR = 0, SPI_INTERRUPT_CIRCULAR } SPIInterruptCircular_t;
 typedef enum { SPI_DISABLE = 0, SPI_ENABLE } SPIEnable_t;
-
-typedef struct {
-  SPIEnable_t en;
-  SPIInterruptType_t type;
-  uint16_t length;
-} SPIInterruptSetup_t;
 
 typedef struct {
   SPIEnable_t tx;
@@ -63,7 +58,6 @@ typedef struct {
   SPIDff_t dff;
   SPICaptureMode_t capture_mode;
   SPISsm_t ssm;
-  SPIInterruptSetup_t interrupt_setup;
   SPIDMASetup_t dma_setup;
   SPIBaudDivisor_t baud_divisor;
   SPIEnable_t enable_on_init;
@@ -94,10 +88,12 @@ int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buf
 
 // Interrupt related SPI calls
 int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, char *buffer, const int len);
+int spi_set_circular_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptCircular_t circular_en);
 SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg);
 int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, void (*fnc_ptr)(void));
 SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg);
 int spi_irq_word_handling(SPI_TypeDef *spi_reg);
 int spi_start_int_word_transfer(SPI_TypeDef *spi_reg);
+int spi_start_int_transfer(SPI_TypeDef *spi_reg, SPIEnable_t tx, SPIEnable_t rx);
 
 #endif
