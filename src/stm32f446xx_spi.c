@@ -38,12 +38,14 @@ int handle_spi_int_buffer(SPI_TypeDef *spi_reg, const SPIInterruptType_t type);
 
  */
 volatile static inline SPIInterruptInfo_t *get_spi_int_info(const SPI_TypeDef *spi_base_addr) {
-  const volatile SPI_TypeDef *spi_addrs[SPIS_NUM] = SPIS;
-  for (int i = 0; i < SPIS_NUM; i++) {
-    if (spi_addrs[i] == spi_base_addr) {
-      return &spi_interrupt_info[i];
-    }
-  }
+  if (spi_base_addr == SPI1)
+    return &spi_interrupt_info[0];
+  else if (spi_base_addr == SPI2)
+    return &spi_interrupt_info[1];
+  else if (spi_base_addr == SPI3)
+    return &spi_interrupt_info[2];
+  else if (spi_base_addr == SPI4)
+    return &spi_interrupt_info[3];
   return NULL;
 }
 
