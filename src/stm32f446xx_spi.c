@@ -356,7 +356,7 @@ int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, void (*fnc_ptr)(void)
   return 0;
 }
 
-int spi_start_interrupt_transfer(SPI_TypeDef *spi_reg) {
+int spi_start_int_word_transfer(SPI_TypeDef *spi_reg) {
   if (spi_reg == NULL) return -1;
 
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
