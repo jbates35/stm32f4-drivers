@@ -17,6 +17,7 @@ typedef struct {
   char *buffer_start;
   int eles_left;
   int len;
+  SPIEnable_t en;
 } SPIInterruptBuffer_t;
 
 typedef struct {
@@ -28,6 +29,7 @@ typedef struct {
 volatile SPIInterruptInfo_t spi_interrupt_info[SPIS_NUM] = {0};
 
 int handle_spi_int_buffer(SPI_TypeDef *spi_reg, const SPIInterruptType_t type);
+// SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg, volatile SPIInterruptInfo_t *spi_info);
 
 /**
  * @brief  Helper function to get the correct SPI Config
@@ -49,16 +51,20 @@ volatile static inline SPIInterruptInfo_t *get_spi_int_info(const SPI_TypeDef *s
   return NULL;
 }
 
-volatile static inline SPIInterruptBuffer_t *get_spi_int_buffer_info(const SPI_TypeDef *spi_base_addr,
-                                                                     const SPIInterruptType_t type) {
-  volatile SPIInterruptInfo_t *spi_info = get_spi_int_info(spi_base_addr);
+static inline SPIInterruptType_t get_spi_irq_type(const SPI_TypeDef *spi_reg, volatile SPIInterruptInfo_t *spi_info) {
+  uint8_t spi_rx_busy = ((spi_reg->CR2 & (1 << SPI_CR2_RXNEIE_Pos)) && (spi_info->status == SPI_INTERRUPT_BUSY));
 
-  if (spi_info == NULL) return NULL;
+  if (spi_reg->SR & (1 << SPI_SR_TXE_Pos) && !spi_rx_busy) {
+    spi_info->status = SPI_INTERRUPT_BUSY;
+    return SPI_INTERRUPT_TYPE_TX;
+  }
 
-  if (type == SPI_INTERRUPT_TYPE_TX)
-    return &spi_info->tx;
-  else
-    return &spi_info->rx;
+  if (spi_reg->SR & (1 << SPI_SR_RXNE_Pos)) {
+    spi_info->status = SPI_INTERRUPT_READY;
+    return SPI_INTERRUPT_TYPE_RX;
+  }
+
+  return SPI_INTERRUPT_TYPE_NONE;
 }
 
 int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state) {
@@ -219,39 +225,25 @@ int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buf
   return 0;
 }
 
-int spi_enable_interrupt(SPI_TypeDef *spi_reg, SPIInterruptType_t type, SPIEnable_t en) {
-  if (spi_reg == NULL) return -1;
-
-  uint8_t type_offset = 0;
-  if (type == SPI_INTERRUPT_TYPE_RX)
-    type_offset = SPI_CR2_RXNEIE_Pos;
-  else if (type == SPI_INTERRUPT_TYPE_TX)
-    type_offset = SPI_CR2_TXEIE_Pos;
-  else
-    return -2;
-
-  if (en == SPI_ENABLE) {
-    spi_reg->CR2 |= (1 << type_offset);
-  } else if (en == SPI_DISABLE) {
-    spi_reg->CR2 &= ~(1 << type_offset);
-  } else
-    return -3;
-
-  return 0;
-}
-
 int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, char *buffer, const int len) {
   if (spi_reg == NULL) return -1;
 
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
   if (int_info->status == SPI_INTERRUPT_BUSY) return -2;
 
-  volatile SPIInterruptBuffer_t *buf_info = get_spi_int_buffer_info(spi_reg, type);
-  if (buf_info == NULL) return -1;
+  volatile SPIInterruptBuffer_t *buf_info = NULL;
+  if (type == SPI_INTERRUPT_TYPE_TX)
+    buf_info = &int_info->tx;
+  else if (type == SPI_INTERRUPT_TYPE_RX)
+    buf_info = &int_info->rx;
+  else
+    return -1;
 
   buf_info->buffer = buffer;
+  buf_info->buffer_start = buffer;
   buf_info->len = len;
   buf_info->eles_left = len;
+  buf_info->en = SPI_ENABLE;
 
   return 0;
 }
@@ -266,74 +258,75 @@ SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg) {
 }
 
 SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg) {
-  volatile SPIInterruptInfo_t *spi_info = get_spi_int_info(spi_reg);
-
-  uint8_t spi_rx_busy = ((spi_reg->CR2 & (1 << SPI_CR2_RXNEIE_Pos)) && (spi_info->status == SPI_INTERRUPT_BUSY));
-
-  if (spi_reg->SR & (1 << SPI_SR_TXE_Pos) && !spi_rx_busy) {
-    spi_info->status = SPI_INTERRUPT_BUSY;
-    return SPI_INTERRUPT_TYPE_TX;
-  }
-
-  if (spi_reg->SR & (1 << SPI_SR_RXNE_Pos)) {
-    spi_info->status = SPI_INTERRUPT_READY;
-    return SPI_INTERRUPT_TYPE_RX;
-  }
-
-  return SPI_INTERRUPT_TYPE_NONE;
+  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
+  return get_spi_irq_type(spi_reg, int_info);
 }
 
 int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
-  if (spi_reg == NULL) return -1;
+  // This function is such a piece of garbage. Probably should be re-organized or made smaller in scope.
 
-  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
-  volatile SPIInterruptBuffer_t *tx_buf_info = get_spi_int_buffer_info(spi_reg, SPI_INTERRUPT_TYPE_TX);
-  volatile SPIInterruptBuffer_t *rx_buf_info = get_spi_int_buffer_info(spi_reg, SPI_INTERRUPT_TYPE_RX);
-  if (tx_buf_info == NULL || rx_buf_info == NULL) return -1;
+  if (spi_reg == NULL) return -1;
 
   // Get the amount of bytes per frame - Should be 1 bytes, or 2 bytes (dff=1)
   uint8_t dff_bytes = ((spi_reg->CR1 >> SPI_CR1_DFF_Pos) & 0b1) + 1;
 
-  SPIInterruptType_t int_status = spi_irq_handling(spi_reg);
+  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
+  SPIInterruptType_t int_status = get_spi_irq_type(spi_reg, int_info);
 
-  if (int_status == SPI_INTERRUPT_TYPE_TX) {
-    // Get next element of array and put it in DR
-    uint8_t tx_byte;
+  if (int_status == SPI_INTERRUPT_TYPE_NONE)
+    return 0;
 
-    if (dff_bytes == 1)
-      tx_byte = *((uint8_t *)tx_buf_info->buffer);
-    else {
-      tx_byte = *((uint16_t *)tx_buf_info->buffer);
-      if (tx_buf_info->eles_left == 1) tx_byte &= 0xFF00;
+  else if (int_status == SPI_INTERRUPT_TYPE_TX) {
+    volatile SPIInterruptBuffer_t *tx_buf_info = &int_info->tx;
+
+    if (tx_buf_info->eles_left > 0) {
+      // Get next element of array and put it in DR
+      uint8_t tx_byte;
+
+      if (dff_bytes == 1)
+        tx_byte = *((uint8_t *)tx_buf_info->buffer);
+      else {
+        tx_byte = *((uint16_t *)tx_buf_info->buffer);
+        if (tx_buf_info->eles_left == 1) tx_byte &= 0xFF00;
+      }
+      spi_reg->DR = tx_byte;
+
+      tx_buf_info->buffer = (char *)tx_buf_info->buffer + dff_bytes;
+      tx_buf_info->eles_left -= dff_bytes;
+    } else {
+      spi_reg->DR = 0xFF;
     }
-    spi_reg->DR = tx_byte;
-
-    tx_buf_info->buffer = (char *)tx_buf_info->buffer + dff_bytes;
-    tx_buf_info->eles_left -= dff_bytes;
   }
 
-  if (int_status == SPI_INTERRUPT_TYPE_RX) {
-    // Get element from DR and parse it, add it into rx buff
-    uint16_t rx_byte = spi_reg->DR;
+  else if (int_status == SPI_INTERRUPT_TYPE_RX) {
+    volatile SPIInterruptBuffer_t *rx_buf_info = &int_info->rx;
 
-    if (dff_bytes == 1 || rx_buf_info->eles_left == 1)
-      *((uint8_t *)rx_buf_info->buffer) = rx_byte & 0xFF;
-    else
-      *((uint16_t *)rx_buf_info->buffer) = rx_byte;
+    if (rx_buf_info->eles_left > 0) {
+      // Get element from DR and parse it, add it into rx buff
+      uint16_t rx_byte = spi_reg->DR;
 
-    rx_buf_info->buffer = (char *)rx_buf_info->buffer + dff_bytes;
-    rx_buf_info->eles_left -= dff_bytes;
+      if (dff_bytes == 1 || rx_buf_info->eles_left == 1)
+        *((uint8_t *)rx_buf_info->buffer) = rx_byte & 0xFF;
+      else
+        *((uint16_t *)rx_buf_info->buffer) = rx_byte;
+
+      rx_buf_info->buffer = (char *)rx_buf_info->buffer + dff_bytes;
+      rx_buf_info->eles_left -= dff_bytes;
+    } else {
+      int throwaway_var = spi_reg->DR;
+    }
   }
 
-  // Might not take care of half-duplex protocol well
-  uint8_t tx_is_done = (tx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
-  uint8_t rx_is_done = (rx_buf_info->eles_left <= 0 && (spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
+  uint8_t tx_is_done = ((int_info->tx.eles_left <= 0) || !(spi_reg->CR2 & (1 << SPI_CR2_TXEIE_Pos)));
+  uint8_t rx_is_done = ((int_info->rx.eles_left <= 0) || !(spi_reg->CR2 & (1 << SPI_CR2_RXNEIE_Pos)));
 
   if (tx_is_done && rx_is_done) {
     int_info->status = SPI_INTERRUPT_DONE;
+    volatile SPIInterruptBuffer_t *tx_buf_info = &int_info->tx;
+    volatile SPIInterruptBuffer_t *rx_buf_info = &int_info->rx;
 
-    spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_TX, SPI_DISABLE);
-    spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_RX, SPI_DISABLE);
+    uint8_t int_word = (1 << SPI_CR2_TXEIE_Pos) | (1 << SPI_CR2_RXNEIE_Pos);
+    spi_reg->CR2 &= ~(int_word);
 
     int_info->callback();
 
@@ -369,8 +362,11 @@ int spi_start_interrupt_transfer(SPI_TypeDef *spi_reg) {
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
   int_info->status = SPI_INTERRUPT_READY;
 
-  spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_TX, SPI_ENABLE);
-  spi_enable_interrupt(spi_reg, SPI_INTERRUPT_TYPE_RX, SPI_ENABLE);
+  uint8_t int_word = 0;
+  if (int_info->tx.en) int_word |= (1 << SPI_CR2_TXEIE_Pos);
+  if (int_info->rx.en) int_word |= (1 << SPI_CR2_RXNEIE_Pos);
 
-  return 0;
+  spi_reg->CR2 |= int_word;
+
+  return (int_word != 0);
 }

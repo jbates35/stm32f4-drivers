@@ -93,11 +93,10 @@ int spi_rx_word(SPI_TypeDef *spi_reg, uint8_t *rx_buffer, int len);
 int spi_full_duplex_transfer(SPI_TypeDef *spi_reg, void *tx_buffer, void *rx_buffer, int len);
 
 // Interrupt related SPI calls
-int spi_enable_interrupt(SPI_TypeDef *spi_reg, SPIInterruptType_t type, SPIEnable_t en);
 int spi_setup_interrupt(const SPI_TypeDef *spi_reg, const SPIInterruptType_t type, char *buffer, const int len);
 SPIInterruptStatus_t spi_get_interrupt_status(const SPI_TypeDef *spi_reg);
-SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg);
 int spi_set_interrupt_callback(const SPI_TypeDef *spi_reg, void (*fnc_ptr)(void));
+SPIInterruptType_t spi_irq_handling(const SPI_TypeDef *spi_reg);
 int spi_irq_word_handling(SPI_TypeDef *spi_reg);
 int spi_start_interrupt_transfer(SPI_TypeDef *spi_reg);
 
