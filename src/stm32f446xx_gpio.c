@@ -157,7 +157,7 @@ uint16_t GPIO_get_input_port(const GPIO_TypeDef *p_GPIO_addr) {
  * @param val Output value - 1 for high, 0 for low
  */
 void GPIO_set_output(GPIO_TypeDef *p_GPIO_addr, uint8_t pin, uint8_t val) {
-  if (p_GPIO_addr == NULL || pin < 16) return;
+  if (p_GPIO_addr == NULL || pin >= 16) return;
 
   if (!val)
     // Reset pin from  1 to 0

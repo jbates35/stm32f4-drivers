@@ -94,6 +94,11 @@ int timer_init(const TimerHandle_t *timer_handle) {
   else if (cfg->direction == TIMER_DIR_DOWN)
     timer->CR1 |= (1 << TIM_CR1_DIR);
 
+  // Enable the Trigger
+  uint8_t trig_assign = cfg->trigger_assignment;
+  if (trig_assign > 0b111) trig_assign = 0;
+  timer->CR2 |= (trig_assign << TIM_CR2_MMS_Pos);
+
   // For easier indexing of addresses
   volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
   volatile uint32_t *ccmr_reg[] = TIMER_CCMR_REGS(timer);

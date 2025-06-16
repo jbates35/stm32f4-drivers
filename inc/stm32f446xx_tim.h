@@ -32,7 +32,13 @@ typedef enum {
   TIMER_CAPTURE_FALLING_EDGE,
   TIMER_CAPTURE_BOTH_EDGE,
 } TimerCaptureEdgeSel_t;
-
+typedef enum {
+  TIMER_TRIGGER_ASSIGNMENT_NONE = 0,
+  TIMER_TRIGGER_ASSIGNMENT_CH1 = 0b100,
+  TIMER_TRIGGER_ASSIGNMENT_CH2,
+  TIMER_TRIGGER_ASSIGNMENT_CH3,
+  TIMER_TRIGGER_ASSIGNMENT_CH4
+} TimerTrigAssign_t;
 /**
   * Channel specific configuration struct
   * @gpio_en: Whether the associated GPIO should be set up to follow the timer. Necessary for PWM and Input capture
@@ -71,6 +77,7 @@ typedef struct {
   TimerClockDivider_t clock_divider;
   TimerDir_t direction;
   uint8_t channel_count;
+  TimerTrigAssign_t trigger_assignment;
   TimerChannelConfig_t channel_1;
   TimerChannelConfig_t channel_2;
   TimerChannelConfig_t channel_3;
