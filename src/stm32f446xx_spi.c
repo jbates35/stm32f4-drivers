@@ -379,7 +379,7 @@ int spi_start_int_word_transfer(SPI_TypeDef *spi_reg) {
   return (int_word != 0);
 }
 
-int spi_start_int_transfer(SPI_TypeDef *spi_reg, SPIEnable_t tx, SPIEnable_t rx) {
+int spi_enable_int_transfer(SPI_TypeDef *spi_reg, SPIEnable_t tx, SPIEnable_t rx) {
   if (spi_reg == NULL) return -1;
 
   volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
@@ -389,6 +389,20 @@ int spi_start_int_transfer(SPI_TypeDef *spi_reg, SPIEnable_t tx, SPIEnable_t rx)
   if (tx == SPI_ENABLE) int_word |= (1 << SPI_CR2_TXEIE_Pos);
   if (rx == SPI_ENABLE) int_word |= (1 << SPI_CR2_RXNEIE_Pos);
   spi_reg->CR2 |= int_word;
+
+  return (int_word != 0);
+}
+
+int spi_disable_int_transfer(SPI_TypeDef *spi_reg) {
+  if (spi_reg == NULL) return -1;
+
+  volatile SPIInterruptInfo_t *int_info = get_spi_int_info(spi_reg);
+  int_info->status = SPI_INTERRUPT_READY;
+
+  uint32_t int_word = 0;
+  int_word |= (1 << SPI_CR2_TXEIE_Pos);
+  int_word |= (1 << SPI_CR2_RXNEIE_Pos);
+  spi_reg->CR2 &= ~int_word;
 
   return (int_word != 0);
 }
