@@ -23,7 +23,7 @@ typedef struct {
 } I2CHandle_t;
 
 int i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en);
-void i2c_init(I2CHandle_t *i2c_handle);
+int i2c_init(I2CHandle_t *i2c_handle);
 void i2c_deinit(I2C_TypeDef *i2c_reg);
 
 #endif
