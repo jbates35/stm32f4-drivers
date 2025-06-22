@@ -91,7 +91,7 @@ typedef struct {
  * @note Ensure that the SPI instance is valid and corresponds to one of the supported
  *       SPI peripherals before calling this function.
  */
-int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state);
+int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIEnable_t en_state);
 
 /**
  * @brief Initializes the SPI peripheral with the specified configuration.

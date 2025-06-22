@@ -94,7 +94,7 @@ static inline SPIInterruptType_t get_spi_irq_type(const SPI_TypeDef *spi_reg, vo
  * @note Ensure that the SPI instance is valid and corresponds to one of the supported
  *       SPI peripherals before calling this function.
  */
-int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state) {
+int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIEnable_t en_state) {
   if (spi_reg == NULL) return -1;  // Error: null pointer
 
   const SPI_TypeDef *spis_arr[] = SPIS;
@@ -106,11 +106,14 @@ int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_
 
   if (i >= SIZEOFP(spis_arr)) return -1;
 
-  if (en_state) {
-    volatile uint32_t *spi_regs[] = SPIS_RCC_REGS;
-    const unsigned int spi_rcc_pos[] = SPIS_RCC_POS;
+  volatile uint32_t *spi_regs[] = SPIS_RCC_REGS;
+  const unsigned int spi_rcc_pos[] = SPIS_RCC_POS;
+  if (en_state == SPI_ENABLE)
     *spi_regs[i] |= (1 << spi_rcc_pos[i]);
-  }
+  else if (en_state == SPI_DISABLE)
+    *spi_regs[i] &= ~(1 << spi_rcc_pos[i]);
+  else
+    return -2;
 
   return 0;
 }
