@@ -12,7 +12,7 @@
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
 static inline int get_i2c_index(const I2C_TypeDef *addr) {
-  volatile I2C_TypeDef *i2c_addrs[] = I2CS;
+  const volatile I2C_TypeDef *i2c_addrs[] = I2CS;
   int i2c_index = -1;
   for (int i = 0; i < SIZEOFP(i2c_addrs); i++) {
     if (addr == i2c_addrs[i]) {
@@ -124,7 +124,7 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   //   cr2_word |= (1 << I2C_CR2_ITEVTEN_Pos);
   // }
 
-  // Tell i2c peripeheral how fast frequency is
+  // Tell i2c peripheral how fast frequency is
   cr2_word |= (freq_mhz << I2C_CR2_FREQ_Pos);
 
   // Slave address
@@ -143,7 +143,7 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   // Set CCR reg - formulas shows in function above
   ccr_word |= (ccr_ccr_val << I2C_CCR_CCR_Pos);
 
-  // Initalize all regs - need to set CR1 last as it has the peripheral enable reg
+  // Initialize all regs - need to set CR1 last as it has the peripheral enable reg
   addr->CCR = ccr_word;
   addr->CR2 = cr2_word;
   addr->CR1 = cr1_word;
@@ -161,4 +161,30 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   *i2c_rstr_arr[index] |= (1 << i2c_rcc_pos[index]);
 
   return 0;
+}
+
+I2CStatus_t i3c_master_send(const I2C_TypeDef *i2c_reg, uint8_t *tx_buffer, int32_t len, uint8_t slave_addr) {
+  int index = get_i2c_index(i2c_reg);
+  if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // 1. Initiate transfer with start byte
+
+  // 2. Wait for start bit to be generated in SR1 (SB)
+
+  // 3. Load the slave address into the I2C data register
+
+  // 4. Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
+
+  // 5. Wait for TxE==1 in SR to be set
+
+  // Next steps can be repeated until end of tx_buffer
+  // 6. Load data into DR, then increment tx_buffer
+
+  // 7. Wait for TxE==1 in SR to be set, go back to 6 if len is > 0, or go to 8
+
+  // 8. Wait for TxE==1 and BTF==1 (Byte frame)
+
+  // 9. Stop transfer using stop byte
+
+  return I2C_STATUS_OK;
 }
