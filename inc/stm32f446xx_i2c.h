@@ -1,4 +1,3 @@
-
 #ifndef INC_STM34F446XX_I2C_H_
 #define INC_STM34F446XX_I2C_H_
 
@@ -7,8 +6,15 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { I2C_MODE_SLAVE = 0, I2C_MODE_MASTER = 1 } I2CMode_t;
-typedef enum { I2C_SCL_SPEED_SM = 100000, I2C_SCL_SPEED_FM = 400000 } I2CSclSpeed_t;
+typedef enum {
+  I2C_STATUS_OK = 0,
+  I2C_STATUS_I2C_ADDR_INVALID = -1,
+  I2C_STATUS_INVALID_PERI_FREQUENCY = -2,
+  I2C_STATUS_INVALID_CCR_CCR_VAL = -3
+} I2CStatus_t;
+
+typedef enum { I2C_DEVICE_MODE_SLAVE = 0, I2C_DEVICE_MODE_MASTER } I2CDeviceMode_t;
+typedef enum { I2C_SCL_MODE_SPEED_SM = 0, I2C_SCL_MODE_SPEED_FM } I2CSclMode_t;
 typedef enum { I2C_FM_DUTY_CYCLE_2 = 0, I2C_FM_DUTY_CYCLE_16_9 } I2CFMDutyCycle_t;
 typedef enum { I2C_DISABLE = 0, I2C_ENABLE } I2CEnable_t;
 
@@ -25,14 +31,13 @@ typedef struct {
  * @param ack_control;
  */
 typedef struct {
-  uint32_t peri_clock_speed;
-  uint16_t fm_duty_cycle;
-  I2CMode_t mode;
+  uint32_t peri_clock_freq_hz;
+  I2CDeviceMode_t device_mode;
   I2CSlaveSetup_t slave_setup;
+  I2CSclMode_t scl_mode;
+  I2CFMDutyCycle_t fm_duty_cycle;
+  I2CEnable_t ack_enable;
   I2CEnable_t dma_enable;
-  I2CEnable_t interrupt_enable;
-  I2CSclSpeed_t scl_speed;
-  I2CEnable_t ack_control;
   I2CEnable_t enable_on_init;
 } I2CConfig_t;
 
@@ -41,8 +46,8 @@ typedef struct {
   I2CConfig_t cfg;
 } I2CHandle_t;
 
-int i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en);
-int i2c_init(I2CHandle_t *i2c_handle);
-int i2c_deinit(I2C_TypeDef *i2c_reg);
+I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en);
+I2CStatus_t i2c_init(I2CHandle_t *i2c_handle);
+I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg);
 
 #endif
