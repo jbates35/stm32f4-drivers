@@ -6,6 +6,8 @@
 
 #include "stm32f446xx.h"
 
+// I2C Resistor calculation: https://www.ti.com/lit/an/slva689/slva689.pdf?ts=1750740074661
+
 typedef enum {
   I2C_STATUS_OK = 0,
   I2C_STATUS_I2C_ADDR_INVALID = -1,
