@@ -1,3 +1,7 @@
+// TODO:
+// - Clear sr flags from master tx
+// - Calculate tRise
+
 #include "stm32f446xx_i2c.h"
 
 #include <string.h>
@@ -143,7 +147,11 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   // Set CCR reg - formulas shows in function above
   ccr_word |= (ccr_ccr_val << I2C_CCR_CCR_Pos);
 
+  ////// TRise reg //////
+  uint16_t trise_word = 0;
+
   // Initialize all regs - need to set CR1 last as it has the peripheral enable reg
+  addr->TRISE = trise_word;
   addr->CCR = ccr_word;
   addr->CR2 = cr2_word;
   addr->CR1 = cr1_word;
