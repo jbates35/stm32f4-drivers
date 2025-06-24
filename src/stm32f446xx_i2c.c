@@ -163,28 +163,41 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   return 0;
 }
 
-I2CStatus_t i3c_master_send(const I2C_TypeDef *i2c_reg, uint8_t *tx_buffer, int32_t len, uint8_t slave_addr) {
+I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, uint8_t *tx_buffer, int32_t len, uint8_t slave_addr) {
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
 
   // 1. Initiate transfer with start byte
+  i2c_reg->CR1 |= (1 < I2C_CR1_START_Pos);
 
   // 2. Wait for start bit to be generated in SR1 (SB)
+  while (!(i2c_reg->SR1 & (1 << I2C_SR1_SB_Pos)));
 
   // 3. Load the slave address into the I2C data register
+  i2c_reg->DR = slave_addr;
 
   // 4. Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
-
-  // 5. Wait for TxE==1 in SR to be set
+  while (!(i2c_reg->SR1 & (1 << I2C_SR1_ADDR_Pos)));
+  (void)i2c_reg->SR1;
+  (void)i2c_reg->SR2;
 
   // Next steps can be repeated until end of tx_buffer
-  // 6. Load data into DR, then increment tx_buffer
+  while (len > 0) {
+    // 5. Wait for TxE==1 in SR to be set
+    while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)));
 
-  // 7. Wait for TxE==1 in SR to be set, go back to 6 if len is > 0, or go to 8
+    // 6. Load data into DR, then increment tx_buffer
+    uint8_t tx_byte = (uint8_t)*tx_buffer;
+    i2c_reg->DR = tx_byte;
+    tx_buffer += 1;
+    len--;
+  }
 
-  // 8. Wait for TxE==1 and BTF==1 (Byte frame)
+  // 7. Wait for TxE==1 and BTF==1 (Byte frame)
+  while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)) || !(i2c_reg->SR1 & (1 << I2C_SR1_BTF_Pos)));
 
-  // 9. Stop transfer using stop byte
+  // 8. Stop transfer using stop byte
+  i2c_reg->CR1 |= (1 < I2C_CR1_STOP_Pos);
 
   return I2C_STATUS_OK;
 }
