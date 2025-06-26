@@ -6,7 +6,9 @@
 
 #include "stm32f446xx.h"
 
-// I2C Resistor calculation: https://www.ti.com/lit/an/slva689/slva689.pdf?ts=1750740074661
+// NOTE: I2C Resistor calculation: https://www.ti.com/lit/an/slva689/slva689.pdf?ts=1750740074661
+// For some other electrical characteristic information,
+// check page 700 of the reference manual for the stm32f446re
 
 typedef enum {
   I2C_STATUS_OK = 0,
