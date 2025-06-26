@@ -148,7 +148,16 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   ccr_word |= (ccr_ccr_val << I2C_CCR_CCR_Pos);
 
   ////// TRise reg //////
-  uint16_t trise_word = 17;
+  uint16_t trise_ns = 0;
+  if (cfg->scl_mode == I2C_SCL_MODE_SPEED_SM)
+    trise_ns = 1000;
+  else if (cfg->scl_mode == I2C_SCL_MODE_SPEED_FM)
+    trise_ns = 300;
+
+  uint16_t trise_word = freq_mhz * trise_ns / 1000 + 1;
+
+  // Essentially, ceil the number if it isn't perfectly divided
+  if (freq_mhz * trise_ns % 1000) trise_word++;
 
   // Initialize all regs - need to set CR1 last as it has the peripheral enable reg
   addr->TRISE = trise_word;
