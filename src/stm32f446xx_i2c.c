@@ -218,3 +218,30 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
 
   return I2C_STATUS_OK;
 }
+
+I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr) {
+  int index = get_i2c_index(i2c_reg);
+  if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // 1. Initiate transfer with start byte
+
+  // 2. Wait for start bit to be generated in SR1 (SB)
+
+  // 3. Load the slave address into the I2C data register
+  // NOTE: I2C master sets receive mode by having the LSB of the address be 1
+
+  // 4. Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
+
+  // Next steps can be repeated until end of tx_buffer
+  while (len > 0) {
+    // 5. Wait for RxNE==1 in SR to be set
+
+    // 6. Load data into DR, then increment rx_buffer
+  }
+
+  // 7. Program ACK to 0
+
+  // 8. Stop transfer using stop byte
+
+  return I2C_STATUS_OK;
+}
