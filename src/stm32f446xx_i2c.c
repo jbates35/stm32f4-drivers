@@ -139,7 +139,7 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   uint16_t ccr_word = 0;
 
   // Whether i2c set in standard mode (100kHz), or fast mode (400kHz)
-  if (cfg->scl_mode) ccr_word |= (1 << I2C_CCR_FS_Pos);
+  if (cfg->scl_mode == I2C_SCL_MODE_SPEED_FM) ccr_word |= (1 << I2C_CCR_FS_Pos);
 
   // Duty cycle mode, only when in fast mode
   if (cfg->fm_duty_cycle == I2C_FM_DUTY_CYCLE_16_9) ccr_word |= (1 << I2C_CCR_DUTY_Pos);
