@@ -236,8 +236,9 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
   // 7. Wait for TxE==1 and BTF==1 (Byte frame)
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)) || !(i2c_reg->SR1 & (1 << I2C_SR1_BTF_Pos)));
 
-  // 8. Stop transfer using stop byte
-  i2c_reg->CR1 |= (1 < I2C_CR1_STOP_Pos);
+  if (stop_at_end == I2C_STOP) {
+    // Stop transfer using stop byte
+    i2c_reg->CR1 |= (1 << I2C_CR1_STOP_Pos);
 
   return I2C_STATUS_OK;
 }

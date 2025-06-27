@@ -17,6 +17,7 @@ typedef enum {
   I2C_STATUS_INVALID_CCR_CCR_VAL = -3
 } I2CStatus_t;
 
+typedef enum { I2C_NO_STOP = 0, I2C_STOP } I2CStop_t;
 typedef enum { I2C_DEVICE_MODE_SLAVE = 0, I2C_DEVICE_MODE_MASTER } I2CDeviceMode_t;
 typedef enum { I2C_SCL_MODE_SPEED_SM = 0, I2C_SCL_MODE_SPEED_FM } I2CSclMode_t;
 typedef enum { I2C_FM_DUTY_CYCLE_2 = 0, I2C_FM_DUTY_CYCLE_16_9 } I2CFMDutyCycle_t;
@@ -53,7 +54,8 @@ typedef struct {
 I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en);
 I2CStatus_t i2c_init(I2CHandle_t *i2c_handle);
 I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg);
-I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr);
+I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
+                            I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);
 
 #endif
