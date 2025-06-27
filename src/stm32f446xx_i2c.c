@@ -4,8 +4,6 @@
 
 #include "stm32f446xx_i2c.h"
 
-#include <string.h>
-
 #include "stm32f446xx.h"
 
 #define I2CS {I2C1, I2C2, I2C3}
@@ -109,9 +107,6 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   ///// CR1 register: /////
   uint16_t cr1_word = 0;
 
-  // Whether an acknowledge should be received after matched address or data
-  if (cfg->ack_enable) cr1_word |= (1 << I2C_CR1_ACK_Pos);
-
   // If in slave mode, whether to set in stretch mode (0 is stretch on stm32)
   if (cfg->device_mode == I2C_DEVICE_MODE_SLAVE && !cfg->slave_setup.clock_stretch)
     cr1_word |= (1 << I2C_CR1_NOSTRETCH_Pos);
@@ -182,63 +177,68 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   return 0;
 }
 
-static inline void i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t slave_addr, const I2CWriteOrRead_t wr) {
-  // 1. Initiate transfer with start byte
-  i2c_reg->CR1 |= (1 << I2C_CR1_START_Pos);
-
-  // 2. Wait for start bit to be generated in SR1 (SB)
+static inline void i2c_start_blocking(I2C_TypeDef *i2c_reg, I2CEnable_t ack_en) {
+  // Initiate transfer with start byte
+  i2c_reg->CR1 |= (ack_en << I2C_CR1_ACK_Pos) | (1 << I2C_CR1_START_Pos);
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_SB_Pos)));
+}
 
-  // 3. Load the slave address into the I2C data register
+static inline void i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t slave_addr, const I2CWriteOrRead_t wr) {
+  // Load the slave address into the I2C data register
   // NOTE: if reading, a 1 should be set to LSB
-  i2c_reg->DR = (slave_addr << 1) & (wr & 1);
+  i2c_reg->DR = (slave_addr << 1) | (wr & 1);
 
-  // 4. Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
+  // Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_ADDR_Pos)));
   (void)i2c_reg->SR1;
   (void)i2c_reg->SR2;
 }
 
 static inline void i2c_tx_byte_blocking(I2C_TypeDef *i2c_reg, uint8_t byte) {
-  // 5. Wait for RxNE==1 in SR to be set
+  // Wait for RxNE==1 in SR to be set
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)));
 
-  // 6. Load data into DR, then increment rx_buffer
+  // Load data into DR, then increment rx_buffer
   i2c_reg->DR = byte;
 }
 
 static inline uint8_t i2c_rx_byte_blocking(const I2C_TypeDef *i2c_reg) {
-  // 5. Wait for RxNE==1 in SR to be set
+  // Wait for RxNE==1 in SR to be set
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_RXNE_Pos)));
 
-  // 6. Load data into DR, then increment rx_buffer
+  // Load data into DR, then increment rx_buffer
   return (uint8_t)i2c_reg->DR;
 }
 
-I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr) {
+I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
+                            I2CStop_t stop_at_end) {
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
 
-  // Steps 1-4 from the reference manual diagram are done in the following function
-  i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_READ);
+  // S and EV5 according to diagram
+  i2c_start_blocking(i2c_reg, I2C_DISABLE);
+
+  // Addr, A, and EV6 according to diagram
+  i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_WRITE);
 
   // Next steps can be repeated until end of tx_buffer
   while (len) {
+    // Data and EV8 event according to diagram
     uint8_t tx_byte = *((uint8_t *)tx_buffer);
-
-    // Steps 5-6 in tx byte function
     i2c_tx_byte_blocking(i2c_reg, tx_byte);
 
     tx_buffer = (uint8_t *)tx_buffer + 1;
     len--;
   }
 
-  // 7. Wait for TxE==1 and BTF==1 (Byte frame)
-  while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)) || !(i2c_reg->SR1 & (1 << I2C_SR1_BTF_Pos)));
+  // EV8_2 event according to diagram
+  // Wait for TxE==1 and BTF==1 (Byte frame)
+  while (!(i2c_reg->SR1 & (1 << I2C_SR1_BTF_Pos)) || !(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)));
 
   if (stop_at_end == I2C_STOP) {
     // Stop transfer using stop byte
     i2c_reg->CR1 |= (1 << I2C_CR1_STOP_Pos);
+  }
 
   return I2C_STATUS_OK;
 }
@@ -247,10 +247,13 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
 
-  // Steps 1-4 from the reference manual diagram are done in the following function
+  // S and EV5 according to diagram
+  i2c_start_blocking(i2c_reg, I2C_ENABLE);
+
+  // Addr, A, and EV6 according to diagram
   i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_READ);
 
-  // Next steps can be repeated until end of tx_buffer
+  // Next steps can be repeated until end of rx_buffer
   while (len) {
     // EV7_1 event handled here:
     if (len == 1) {
@@ -258,7 +261,7 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
       i2c_reg->CR1 |= (1 << I2C_CR1_STOP_Pos);
     }
 
-    // Steps 5-6 in tx byte function
+    // Data and EV7 Event from diagram here
     uint8_t rx_byte = i2c_rx_byte_blocking(i2c_reg);
     *((uint8_t *)rx_buffer) = rx_byte;
     rx_buffer = (uint8_t *)rx_buffer + 1;
