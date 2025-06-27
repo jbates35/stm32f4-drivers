@@ -41,7 +41,6 @@ typedef struct {
   I2CSlaveSetup_t slave_setup;
   I2CSclMode_t scl_mode;
   I2CFMDutyCycle_t fm_duty_cycle;
-  I2CEnable_t ack_enable;
   I2CEnable_t dma_enable;
   I2CEnable_t enable_on_init;
 } I2CConfig_t;
