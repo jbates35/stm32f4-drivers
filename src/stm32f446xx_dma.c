@@ -24,14 +24,14 @@ DMAStatusRegStruct_t get_dma_sr_struct(const DMA_Stream_TypeDef *stream);
 
 /**
  * @brief  Controls the clock for the DMA peripheral.
- * 
+ *
  * This function enables or disables the clock for the specified DMA peripheral.
- * 
+ *
  * @param base_addr  Pointer to the base address of the DMA peripheral.
  * @param en_state   State to enable or disable the clock.
  * @return int       Returns 0 on success, -1 on error.
  */
-int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t en_state) {
+int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAEnable_t en_state) {
   // If null pointer, return error code
   if (base_addr == NULL) return -1;
 
@@ -48,7 +48,7 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t 
 
   // Enable or disable DMA peripheral's clock
   const unsigned int dma_reg_pos[] = DMA_RCC_POS;
-  if (en_state == DMA_PERI_CLOCK_ENABLE)
+  if (en_state == DMA_ENABLE)
     RCC->AHB1ENR |= (1 << dma_reg_pos[i]);
   else
     RCC->AHB1RSTR |= (1 << dma_reg_pos[i]);
@@ -58,9 +58,9 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAPeriClockEn_t 
 
 /**
  * @brief  Initializes the DMA stream.
- * 
+ *
  * This function initializes the specified DMA stream with the provided configuration.
- * 
+ *
  * @param dma_handle  Pointer to the DMA handle structure.
  * @return int        Returns 0 on success, -1 on error.
  */
@@ -129,18 +129,18 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   // Set number of data elements which can be stored in dma buffer
   stream->NDTR = cfg->dma_elements;
 
-  if (cfg->start_enabled == DMA_START_ENABLED) stream->CR |= (1 << DMA_SxCR_EN_Pos);
+  if (cfg->start_enabled == DMA_ENABLE) stream->CR |= (1 << DMA_SxCR_EN_Pos);
 
   return 0;
 }
 
 /**
  * @brief Start a DMA transaction.
- * 
+ *
  * This function is used when you need to start a transaction with a certain number of elements to transfer.
  *
  * Note this function (at 16MHz) takes like 50us
- * 
+ *
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param buffer_size The number of elements to transfer before the DMA disables again.
  */
@@ -181,9 +181,9 @@ void dma_stream_en(DMA_Stream_TypeDef *stream) {
 
 /**
  * @brief Disable the DMA stream.
- * 
+ *
  * This function clears the enable bit in the control register of the specified DMA stream.
- * 
+ *
  * @param stream Pointer to the DMA stream to be disabled. If NULL, the function returns immediately.
  */
 void dma_stream_dis(DMA_Stream_TypeDef *stream) {
@@ -194,9 +194,9 @@ void dma_stream_dis(DMA_Stream_TypeDef *stream) {
 /**
  * @brief  Initializes the DMA stream.
  * @brief  Handles DMA interrupts.
- * 
+ *
  * This function handles the specified DMA interrupt for the given stream.
- * 
+ *
  * @param stream          DMA Stream that the flag is associated with
  * @param interrupt_type  Type of the interrupt to handle.
  * @return int            Returns 1 if the interrupt was handled, 0 otherwise.

@@ -5,7 +5,6 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { SPI_PERI_CLOCK_DISABLE = 0, SPI_PERI_CLOCK_ENABLE } SPIPeriClockEnable_t;
 typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SPIDeviceMode_t;
 typedef enum {
   SPI_BUS_CONFIG_FULL_DUPLEX = 0,

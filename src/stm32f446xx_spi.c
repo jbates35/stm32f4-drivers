@@ -482,7 +482,7 @@ int spi_irq_word_handling(SPI_TypeDef *spi_reg) {
       rx_buf_info->buffer = (char *)rx_buf_info->buffer + dff_bytes;
       rx_buf_info->eles_left -= dff_bytes;
     } else {
-      int throwaway_var = spi_reg->DR;
+      (void)spi_reg->DR;
     }
   }
 
