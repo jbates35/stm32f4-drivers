@@ -27,6 +27,8 @@ static inline int get_i2c_index(const I2C_TypeDef *addr) {
   return i2c_index;
 }
 
+static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) { return i2c_reg->SR1 & mask; }
+
 static inline uint16_t get_i2c_ccr_ccr_val(I2CSclMode_t scl_mode, I2CFMDutyCycle_t dc, uint32_t peri_freq) {
   uint16_t ccr_val = 0;
   if (scl_mode == I2C_SCL_MODE_SPEED_SM) {
@@ -183,15 +185,21 @@ static inline void i2c_start_blocking(I2C_TypeDef *i2c_reg, I2CEnable_t ack_en) 
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_SB_Pos)));
 }
 
-static inline void i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t slave_addr, const I2CWriteOrRead_t wr) {
+static inline I2CStatus_t i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t slave_addr, const I2CWriteOrRead_t wr) {
   // Load the slave address into the I2C data register
   // NOTE: if reading, a 1 should be set to LSB
-  i2c_reg->DR = (slave_addr << 1) | (wr & 1);
+  uint8_t slave_addr_tx = (slave_addr << 1) | (wr & 1);
+  i2c_reg->DR = slave_addr_tx;
 
-  // Wait for ADDR==1 in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
-  while (!(i2c_reg->SR1 & (1 << I2C_SR1_ADDR_Pos)));
+  // Wait for ADDR bit in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
+  while (!get_status(i2c_reg, I2C_SR1_ADDR)) {
+    if (get_status(i2c_reg, I2C_SR1_AF)) return I2C_STATUS_ACK_FAIL;
+  }
+
   (void)i2c_reg->SR1;
   (void)i2c_reg->SR2;
+
+  return I2C_STATUS_OK;
 }
 
 static inline void i2c_tx_byte_blocking(I2C_TypeDef *i2c_reg, uint8_t byte) {
