@@ -15,13 +15,29 @@ typedef enum {
   I2C_STATUS_I2C_ADDR_INVALID = -1,
   I2C_STATUS_INVALID_PERI_FREQUENCY = -2,
   I2C_STATUS_INVALID_CCR_CCR_VAL = -3,
-  I2C_STATUS_ACK_FAIL = -4
+  I2C_STATUS_ACK_FAIL = -4,
+  I2C_STATUS_INVALID_I2C_INT_TYPE = -5
 } I2CStatus_t;
-
 typedef enum { I2C_NO_STOP = 0, I2C_STOP } I2CStop_t;
 typedef enum { I2C_DEVICE_MODE_SLAVE = 0, I2C_DEVICE_MODE_MASTER } I2CDeviceMode_t;
 typedef enum { I2C_SCL_MODE_SPEED_SM = 0, I2C_SCL_MODE_SPEED_FM } I2CSclMode_t;
 typedef enum { I2C_FM_DUTY_CYCLE_2 = 0, I2C_FM_DUTY_CYCLE_16_9 } I2CFMDutyCycle_t;
+typedef enum { I2C_TXRX_DIR_SEND = 0, I2C_TXRX_DIR_RECEIVE } I2CTxRxDirection_t;
+typedef enum {
+  I2C_INT_TYPE_NONE = 0,
+  I2C_INT_TYPE_STARTED,
+  I2C_INT_TYPE_ADDR_SENT,
+  I2C_INT_TYPE_TXE,
+  I2C_INT_TYPE_RXNE,
+  I2C_INT_TYPE_ERROR_ARBLOST,
+  I2C_INT_TYPE_ERROR_BUS,
+  I2C_INT_TYPE_ERROR_ACKFAIL,
+} I2CInterruptType_t;
+typedef enum {
+  I2C_INTERRUPT_STATUS_READY = 0,
+  I2C_INTERRUPT_STATUS_BUSY,
+  I2C_INTERRUPT_STATUS_DONE
+} I2CInterruptStatus_t;
 typedef enum { I2C_DISABLE = 0, I2C_ENABLE } I2CEnable_t;
 
 typedef struct {
@@ -57,5 +73,9 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg);
 I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
                             I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);
+
+I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, uint8_t *buff, uint32_t len);
+I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en);
+I2CInterruptType_t get_spi_irq_type(I2C_TypeDef *i2c_reg);
 
 #endif
