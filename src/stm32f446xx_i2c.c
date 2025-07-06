@@ -206,22 +206,6 @@ static inline I2CStatus_t i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t s
   return I2C_STATUS_OK;
 }
 
-static inline void i2c_tx_byte_blocking(I2C_TypeDef *i2c_reg, uint8_t byte) {
-  // Wait for RxNE==1 in SR to be set
-  while (!(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)));
-
-  // Load data into DR, then increment rx_buffer
-  i2c_reg->DR = byte;
-}
-
-static inline uint8_t i2c_rx_byte_blocking(const I2C_TypeDef *i2c_reg) {
-  // Wait for RxNE==1 in SR to be set
-  while (!(i2c_reg->SR1 & (1 << I2C_SR1_RXNE_Pos)));
-
-  // Load data into DR, then increment rx_buffer
-  return (uint8_t)i2c_reg->DR;
-}
-
 I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
                             I2CStop_t stop_at_end) {
   int index = get_i2c_index(i2c_reg);
@@ -231,21 +215,22 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
   i2c_start_blocking(i2c_reg, I2C_DISABLE);
 
   // Addr, A, and EV6 according to diagram
-  i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_WRITE);
+  if (i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_WRITE) == I2C_STATUS_ACK_FAIL) return I2C_STATUS_ACK_FAIL;
 
   // Next steps can be repeated until end of tx_buffer
   while (len) {
-    // Data and EV8 event according to diagram
-    uint8_t tx_byte = *((uint8_t *)tx_buffer);
-    i2c_tx_byte_blocking(i2c_reg, tx_byte);
+    // Send data - Data and EV8 event according to diagram
+    while (!get_status(i2c_reg, I2C_SR1_TXE));
+    i2c_reg->DR = *((uint8_t *)tx_buffer);
 
+    // Move buffer position for next iteration
     tx_buffer = (uint8_t *)tx_buffer + 1;
     len--;
   }
 
   // EV8_2 event according to diagram
   // Wait for TxE==1 and BTF==1 (Byte frame)
-  while (!(i2c_reg->SR1 & (1 << I2C_SR1_BTF_Pos)) || !(i2c_reg->SR1 & (1 << I2C_SR1_TXE_Pos)));
+  while (!get_status(i2c_reg, I2C_SR1_TXE) || !get_status(i2c_reg, I2C_SR1_BTF));
 
   if (stop_at_end == I2C_STOP) {
     // Stop transfer using stop byte
@@ -263,19 +248,38 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
   i2c_start_blocking(i2c_reg, I2C_ENABLE);
 
   // Addr, A, and EV6 according to diagram
-  i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_READ);
+  if (i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_WRITE) == I2C_STATUS_ACK_FAIL) return I2C_STATUS_ACK_FAIL;
+
+  // Handle differently if single byte reception
+  if (len == 1) {
+    // Set ack low and set stop bit high
+    i2c_reg->CR1 &= ~(1 << I2C_CR1_ACK_Pos);
+    i2c_reg->CR1 |= (1 << I2C_CR1_STOP_Pos);
+
+    // Clear flags
+    (void)i2c_reg->SR1;
+    (void)i2c_reg->SR2;
+
+    // Data and EV7 Event from diagram here
+    while (!get_status(i2c_reg, I2C_SR1_RXNE));
+    *((uint8_t *)rx_buffer) = (uint8_t)i2c_reg->DR;
+
+    return I2C_STATUS_OK;
+  }
 
   // Next steps can be repeated until end of rx_buffer
   while (len) {
+    // Wait for data
+    while (!get_status(i2c_reg, I2C_SR1_RXNE));
+
     // EV7_1 event handled here:
-    if (len == 1) {
+    if (len == 2) {
       i2c_reg->CR1 &= ~(1 << I2C_CR1_ACK_Pos);
       i2c_reg->CR1 |= (1 << I2C_CR1_STOP_Pos);
     }
 
     // Data and EV7 Event from diagram here
-    uint8_t rx_byte = i2c_rx_byte_blocking(i2c_reg);
-    *((uint8_t *)rx_buffer) = rx_byte;
+    *((uint8_t *)rx_buffer) = (uint8_t)i2c_reg->DR;
     rx_buffer = (uint8_t *)rx_buffer + 1;
     len--;
   }
