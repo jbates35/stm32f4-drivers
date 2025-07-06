@@ -123,3 +123,5 @@ I2CInterruptType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
 
   return I2C_INT_TYPE_NONE;
 }
+
+I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) { return I2C_INTERRUPT_STATUS_DONE; }
