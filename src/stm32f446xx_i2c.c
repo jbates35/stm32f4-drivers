@@ -28,6 +28,7 @@ static inline int get_i2c_index(const I2C_TypeDef *addr) {
 }
 
 static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) { return i2c_reg->SR1 & mask; }
+static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) {
 
 static inline uint16_t get_i2c_ccr_ccr_val(I2CSclMode_t scl_mode, I2CFMDutyCycle_t dc, uint32_t peri_freq) {
   uint16_t ccr_val = 0;
@@ -175,8 +176,11 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   const unsigned int i2c_rcc_pos[] = I2CS_RCC_POS;
 
   *i2c_rstr_arr[index] |= (1 << i2c_rcc_pos[index]);
+  __NOP();
+  __NOP();
+  *i2c_rstr_arr[index] &= ~(1 << i2c_rcc_pos[index]);
 
-  return 0;
+  return I2C_STATUS_OK;
 }
 
 static inline void i2c_start_blocking(I2C_TypeDef *i2c_reg, I2CEnable_t ack_en) {
