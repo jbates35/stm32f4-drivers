@@ -253,7 +253,7 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
   i2c_start_blocking(i2c_reg, I2C_ENABLE);
 
   // Addr, A, and EV6 according to diagram
-  if (i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_WRITE) == I2C_STATUS_ACK_FAIL) return I2C_STATUS_ACK_FAIL;
+  if (i2c_send_addr_blocking(i2c_reg, slave_addr, I2C_READ) == I2C_STATUS_ACK_FAIL) return I2C_STATUS_ACK_FAIL;
 
   // Handle differently if single byte reception
   if (len == 1) {
