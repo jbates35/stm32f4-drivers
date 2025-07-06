@@ -96,12 +96,16 @@ I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t 
   return I2C_STATUS_OK;
 }
 
-I2CInterruptType_t get_i2c_irq_type(I2C_TypeDef *i2c_reg) {
+I2CInterruptType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_SB)) return I2C_INT_TYPE_STARTED;
   if (get_status(i2c_reg, I2C_SR1_ADDR)) return I2C_INT_TYPE_ADDR_SENT;
   if (get_status(i2c_reg, I2C_SR1_RXNE)) return I2C_INT_TYPE_RXNE;
   if (get_status(i2c_reg, I2C_SR1_TXE)) return I2C_INT_TYPE_TXE;
 
+  return I2C_INT_TYPE_NONE;
+}
+
+I2CInterruptType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_ARLO)) {
     clear_flag(i2c_reg, I2C_SR1_ARLO);
     return I2C_INT_TYPE_ERROR_ARBLOST;
