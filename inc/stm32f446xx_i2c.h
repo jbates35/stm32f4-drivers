@@ -76,6 +76,6 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
 
 I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, uint8_t *buff, uint32_t len);
 I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en);
-I2CInterruptType_t get_spi_irq_type(I2C_TypeDef *i2c_reg);
+I2CInterruptType_t get_i2c_irq_type(I2C_TypeDef *i2c_reg);
 
 #endif
