@@ -32,7 +32,8 @@ void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const GPIOPeriCloc
 
 /*
  * Initialize a GPIO pin
-+* @param p_GPIO_handle The handle type as defined in the gpio.h file which describes both the base address and the required configuration
++* @param p_GPIO_handle The handle type as defined in the gpio.h file which describes both the base address and the
+required configuration
  */
 void GPIO_init(const GPIOHandle_t *p_GPIO_handle) {
   if (p_GPIO_handle == NULL) return;
@@ -107,10 +108,10 @@ void GPIO_init(const GPIOHandle_t *p_GPIO_handle) {
 }
 
 /**
-  * @brief Reset the entire GPIO port
-  * 
-  * @param p_GPIO_addr The base address of the GPIO port to reset
-  */
+ * @brief Reset the entire GPIO port
+ *
+ * @param p_GPIO_addr The base address of the GPIO port to reset
+ */
 void GPIO_deinit(const GPIO_TypeDef *p_GPIO_addr) {
   if (p_GPIO_addr == NULL) return;
 
@@ -120,6 +121,8 @@ void GPIO_deinit(const GPIO_TypeDef *p_GPIO_addr) {
 
     // Turn reset register on and off
     RCC->AHB1RSTR |= (1 << i);
+    __NOP();
+    __NOP();
     RCC->AHB1RSTR &= ~(1 << i);
   }
 }
