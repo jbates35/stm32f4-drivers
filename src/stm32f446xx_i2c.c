@@ -27,8 +27,10 @@ static inline int get_i2c_index(const I2C_TypeDef *addr) {
   return i2c_index;
 }
 
-static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) { return i2c_reg->SR1 & mask; }
 static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) {
+  if (i2c_reg->SR1 & mask) return 1;
+  return 0;
+}
 
 static inline uint16_t get_i2c_ccr_ccr_val(I2CSclMode_t scl_mode, I2CFMDutyCycle_t dc, uint32_t peri_freq) {
   uint16_t ccr_val = 0;
@@ -197,7 +199,10 @@ static inline I2CStatus_t i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t s
 
   // Wait for ADDR bit in SR to be set, meaning address phase is done. Need to read SR1, and then SR2
   while (!get_status(i2c_reg, I2C_SR1_ADDR)) {
-    if (get_status(i2c_reg, I2C_SR1_AF)) return I2C_STATUS_ACK_FAIL;
+    if (get_status(i2c_reg, I2C_SR1_AF)) {
+      i2c_reg->SR1 &= ~(1 << I2C_SR1_AF_Pos);
+      return I2C_STATUS_ACK_FAIL;
+    }
   }
 
   (void)i2c_reg->SR1;
