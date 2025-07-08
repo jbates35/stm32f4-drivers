@@ -101,6 +101,7 @@ I2CInterruptType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_ADDR)) return I2C_INT_TYPE_ADDR_SENT;
   if (get_status(i2c_reg, I2C_SR1_RXNE)) return I2C_INT_TYPE_RXNE;
   if (get_status(i2c_reg, I2C_SR1_TXE)) return I2C_INT_TYPE_TXE;
+  if (get_status(i2c_reg, I2C_SR1_BTF)) return I2C_INT_TYPE_BTF;
 
   return I2C_INT_TYPE_NONE;
 }
@@ -119,6 +120,16 @@ I2CInterruptType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_AF)) {
     clear_flag(i2c_reg, I2C_SR1_AF);
     return I2C_INT_TYPE_ERROR_ACKFAIL;
+  }
+
+  if (get_status(i2c_reg, I2C_SR1_TIMEOUT)) {
+    clear_flag(i2c_reg, I2C_SR1_TIMEOUT);
+    return I2C_INT_TYPE_ERROR_TIMEOUT;
+  }
+
+  if (get_status(i2c_reg, I2C_SR1_OVR)) {
+    clear_flag(i2c_reg, I2C_SR1_OVR);
+    return I2C_INT_TYPE_ERROR_OVERRUN;
   }
 
   return I2C_INT_TYPE_NONE;
