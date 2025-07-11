@@ -1,7 +1,3 @@
-// TODO:
-// - Clear sr flags from master tx
-// - Calculate tRise
-
 #include "stm32f446xx.h"
 #include "stm32f446xx_i2c.h"
 
@@ -16,10 +12,9 @@
 typedef enum { I2C_WRITE = 0, I2C_READ = 1 } I2CWriteOrRead_t;
 
 typedef struct {
-  uint8_t *buff;
-  uint8_t *buff_start;
+  void *buff;
   int32_t len;
-  int32_t eles_left;
+  int32_t i;
   I2CEnable_t en;
 } I2CInterruptBuffer_t;
 
@@ -27,6 +22,8 @@ typedef struct {
   I2CInterruptBuffer_t tx;
   I2CInterruptBuffer_t rx;
   I2CInterruptStatus_t status;
+  uint8_t address;
+  I2CInterruptCircular_t circular;
   void (*callback)(void);
 } I2CInterruptInfo_t;
 
@@ -61,35 +58,32 @@ volatile static inline I2CInterruptInfo_t *get_i2c_int_info(const I2C_TypeDef *i
   return NULL;
 }
 
-I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, uint8_t *buff, uint32_t len) {
-  volatile I2CInterruptInfo_t *i2c_info = get_i2c_int_info(i2c_reg);
-  if (i2c_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t setup_info) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
 
-  volatile I2CInterruptBuffer_t *buf_info = NULL;
+  if (int_info->status == I2C_INTERRUPT_STATUS_BUSY) return I2C_STATUS_INTERRUPT_BUSY;
 
-  if (type == I2C_TXRX_DIR_SEND)
-    buf_info = &i2c_info->tx;
-  else if (type == I2C_TXRX_DIR_RECEIVE)
-    buf_info = &i2c_info->rx;
-  else
-    return I2C_STATUS_INVALID_I2C_INT_TYPE;
-
-  buf_info->buff = buff;
-  buf_info->buff_start = buff;
-  buf_info->len = len;
-  buf_info->eles_left = len;
+  int_info->tx.buff = setup_info.tx.buff;
+  int_info->tx.len = setup_info.tx.len;
+  int_info->tx.i = 0;
+  int_info->rx.buff = setup_info.tx.buff;
+  int_info->rx.len = setup_info.tx.len;
+  int_info->rx.i = 0;
+  int_info->address = setup_info.address;
+  int_info->circular = setup_info.circular;
 
   return I2C_STATUS_OK;
 }
 
 I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en) {
-  volatile I2CInterruptInfo_t *i2c_info = get_i2c_int_info(i2c_reg);
-  if (i2c_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
 
   if (type == I2C_TXRX_DIR_SEND)
-    i2c_info->tx.en = en;
+    int_info->tx.en = en;
   else if (type == I2C_TXRX_DIR_RECEIVE)
-    i2c_info->rx.en = en;
+    int_info->rx.en = en;
   else
     return I2C_STATUS_INVALID_I2C_INT_TYPE;
 
@@ -135,4 +129,31 @@ I2CInterruptType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
   return I2C_INT_TYPE_NONE;
 }
 
-I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) { return I2C_INTERRUPT_STATUS_DONE; }
+I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
+  I2CInterruptType_t int_type = i2c_irq_event_handling(i2c_reg);
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+
+  if (int_info->tx.en) {
+    if (int_type == I2C_INT_TYPE_STARTED) {
+      // send_addr(i2c_reg, 0x68, 0);
+    } else if (int_type == I2C_INT_TYPE_ADDR_SENT) {
+      // init_xmission(i2c_reg, 0);
+    } else if (int_type == I2C_INT_TYPE_TXE && int_info->tx.eles_left) {
+      // send_data(i2c_reg, &int_info->tx);
+    } else if (int_type == I2C_INT_TYPE_TXE) {
+      // end_tx(i2c_reg, &int_info->tx, &int_info->rx);
+    }
+  } else if (int_info->rx.en) {
+    // RX:
+    if (int_type == I2C_INT_TYPE_STARTED) {
+      // send_addr(i2c_reg, 0x68, 1);
+    } else if (int_type == I2C_INT_TYPE_ADDR_SENT) {
+      // init_xmission(i2c_reg, 1);
+      // single_byte_rx_handler(i2c_reg, &int_info->rx);
+    } else if (int_type == I2C_INT_TYPE_RXNE && int_info->rx.eles_left) {
+      // receive_data(i2c_reg, &int_info->rx);
+    }
+  }
+
+  return I2C_INTERRUPT_STATUS_DONE;
+}

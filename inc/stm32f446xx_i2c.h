@@ -16,7 +16,8 @@ typedef enum {
   I2C_STATUS_INVALID_PERI_FREQUENCY = -2,
   I2C_STATUS_INVALID_CCR_CCR_VAL = -3,
   I2C_STATUS_ACK_FAIL = -4,
-  I2C_STATUS_INVALID_I2C_INT_TYPE = -5
+  I2C_STATUS_INVALID_I2C_INT_TYPE = -5,
+  I2C_STATUS_INTERRUPT_BUSY = -6
 } I2CStatus_t;
 typedef enum { I2C_NO_STOP = 0, I2C_STOP } I2CStop_t;
 typedef enum { I2C_DEVICE_MODE_SLAVE = 0, I2C_DEVICE_MODE_MASTER } I2CDeviceMode_t;
@@ -41,12 +42,26 @@ typedef enum {
   I2C_INTERRUPT_STATUS_BUSY,
   I2C_INTERRUPT_STATUS_DONE
 } I2CInterruptStatus_t;
+typedef enum { I2C_INTERRUPT_NON_CIRCULAR = 0, I2C_INTERRUPT_CIRCULAR } I2CInterruptCircular_t;
 typedef enum { I2C_DISABLE = 0, I2C_ENABLE } I2CEnable_t;
 
 typedef struct {
   uint8_t device_address;
   I2CEnable_t clock_stretch;
 } I2CSlaveSetup_t;
+
+typedef struct {
+  void *buff;
+  int32_t len;
+} I2CBuffer_t;
+
+typedef struct {
+  I2CBuffer_t tx;
+  I2CBuffer_t rx;
+  uint8_t address;
+  I2CInterruptCircular_t circular;
+} I2CInterruptConfig_t;
+
 /**
  * @brief I2C configuration structure
  * @param peri_clock_speed The speed of the peripheral clock (APB1);
@@ -77,7 +92,7 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
                             I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);
 
-I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, uint8_t *buff, uint32_t len);
+I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t setup_info);
 I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en);
 I2CInterruptType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg);
 I2CInterruptType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg);
