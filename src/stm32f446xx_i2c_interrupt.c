@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "stm32f446xx.h"
 #include "stm32f446xx_i2c.h"
 
@@ -27,7 +29,7 @@ typedef struct {
   void (*callback)(void);
 } I2CInterruptInfo_t;
 
-volatile I2CInterruptInfo_t i2c_interrupt_info[I2CS_NUM] = {0};
+static volatile I2CInterruptInfo_t i2c_interrupt_info[I2CS_NUM] = {0};
 
 static inline int get_i2c_index(const I2C_TypeDef *addr) {
   const volatile I2C_TypeDef *i2c_addrs[] = I2CS;

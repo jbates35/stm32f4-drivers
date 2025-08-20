@@ -1,8 +1,8 @@
 #ifndef INC_STM34F446XX_I2C_H_
 #define INC_STM34F446XX_I2C_H_
 
-#include <stdatomic.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "stm32f446xx.h"
 
