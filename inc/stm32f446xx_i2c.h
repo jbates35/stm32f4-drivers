@@ -96,6 +96,7 @@ I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t le
 I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t setup_info);
 I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en);
 I2CStatus_t i2c_start_interrupt(I2C_TypeDef *i2c_reg);
+I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg);
 
