@@ -73,8 +73,8 @@ I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptCo
   int_info->tx.eles_left = setup_info.tx.len;
 
   // RX specific buffer
-  int_info->rx.buff = setup_info.tx.buff;
-  int_info->rx.len = setup_info.tx.len;
+  int_info->rx.buff = setup_info.rx.buff;
+  int_info->rx.len = setup_info.rx.len;
   int_info->rx.eles_left = setup_info.rx.len;
 
   // General interrupt stuff
@@ -284,15 +284,16 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
   }
 
   // If both tx and rx are done, we need to cleanup logic, set callback, and load buffer again if set to circular
-  uint8_t tx_done = !int_info->tx.en;
-  uint8_t rx_done = !int_info->rx.en;
+  uint8_t tx_done = !int_info->tx.en || !int_info->tx.eles_left;
+  uint8_t rx_done = !int_info->rx.en || !int_info->rx.eles_left;
 
   // Check for this to ensure following logic is done only once
   uint8_t int_busy = (int_info->status == I2C_INTERRUPT_STATUS_BUSY);
 
   if (tx_done && rx_done && int_busy) {
     int_info->status = I2C_INTERRUPT_STATUS_DONE;
-    int_info->callback();
+
+    if (int_info->callback) int_info->callback();
 
     // Re-setup and re-enable interrupt if circular
     if (int_info->circular == I2C_INTERRUPT_CIRCULAR) {
