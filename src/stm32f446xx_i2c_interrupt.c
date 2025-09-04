@@ -297,18 +297,34 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
 
     // Re-setup and re-enable interrupt if circular
     if (int_info->circular == I2C_INTERRUPT_CIRCULAR) {
-      // TX specific buffer
-      int_info->tx.eles_left = int_info->tx.len;
-      int_info->tx.en = I2C_ENABLE;
-
-      // RX specific buffer
-      int_info->rx.eles_left = int_info->tx.len;
-      int_info->rx.en = I2C_ENABLE;
-
       // Restart interrupt
+      i2c_reset_interrupt(i2c_reg);
       i2c_start_interrupt(i2c_reg);
     }
   }
 
   return int_info->status;
+}
+
+I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // TX specific buffer
+  int_info->tx.eles_left = int_info->tx.len;
+  int_info->tx.en = I2C_ENABLE;
+
+  // RX specific buffer
+  int_info->rx.eles_left = int_info->rx.len;
+  int_info->rx.en = I2C_ENABLE;
+
+  return I2C_STATUS_OK;
+}
+
+I2CStatus_t i2c_assign_interrupt_cb(const I2C_TypeDef *i2c_reg, void (*callback)(void)) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  int_info->callback = callback;
+  return I2C_STATUS_OK;
 }
