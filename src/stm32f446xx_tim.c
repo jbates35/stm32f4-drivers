@@ -1,4 +1,4 @@
-/** 
+/**
   Timer Module
   Made by Jimmy Bates - ~November 2024
 **/
@@ -29,12 +29,12 @@
 
 /**
  * @brief  Controls the peripheral clock for a given timer.
- * 
+ *
  * This function enables or disables the peripheral clock for the specified timer.
- * 
+ *
  * @param  base_addr: Base address of the timer.
  * @param  en_state: Enable state (1 to enable, 0 to disable).
- * 
+ *
  * @retval 0 on success, -1 on failure (e.g., if base_addr is NULL or out of range).
  */
 int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state) {
@@ -60,12 +60,12 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
 
 /**
  * @brief  Initializes the timer with the specified configuration.
- * 
+ *
  * This function sets up the timer based on the provided configuration in the TimerHandle_t structure.
  * It configures the clock divider, prescaler, auto-reload register, direction, and channel-specific settings.
- * 
+ *
  * @param  timer_handle: Pointer to the TimerHandle_t structure containing the timer base address and configuration.
- * 
+ *
  * @retval 0 on success, -1 if the timer_handle is NULL.
  */
 int timer_init(const TimerHandle_t *timer_handle) {
@@ -111,7 +111,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
     // Configure the output mode accordingly
     TimerChanMode_t channel_mode = channel_cfg[i]->channel_mode;
-    if (channel_mode == TIMER_CHANNEL_MODE_COMPARE) {
+    if (channel_mode == TIMER_CHANNEL_MODE_COMPARE || channel_mode == TIMER_CHANNEL_MODE_ONESHOT) {
       // Ensure the timer is set to output capture mode
       *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
 
@@ -122,6 +122,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
       ///// NOTE: If pre-load is enabled, it should go here
 
+      if (channel_mode == TIMER_CHANNEL_MODE_ONESHOT) timer->CR1 |= (1 << TIM_CR1_OPM_Pos);
     } else if (channel_mode == TIMER_CHANNEL_MODE_CAPTURE) {
       // Change the timer to input capture mode
       *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
@@ -158,8 +159,8 @@ int timer_init(const TimerHandle_t *timer_handle) {
     }
 
     // Enable or disable the forwarding of the pin information to the GPIO pin
-    TimerGPIOEn_t gpio_en = channel_cfg[i]->gpio_en;
-    if (gpio_en == TIMER_GPIO_ENABLE)
+    TimerEnable_t gpio_en = channel_cfg[i]->gpio_en;
+    if (gpio_en == TIMER_ENABLE)
       timer->CCER |= (1 << (TIM_CCER_CC1E_Pos + (4 * i)));
     else
       timer->CCER &= ~(1 << (TIM_CCER_CC1E_Pos + (4 * i)));
@@ -169,26 +170,26 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
     // Set interrupt if required
     timer->DIER &= ~(1 << (TIM_DIER_CC1IE_Pos + i));
-    if (channel_cfg[i]->interrupt_en == TIMER_INTERRUPT_ENABLE) timer->DIER |= (1 << (TIM_DIER_CC1IE_Pos + i));
+    if (channel_cfg[i]->interrupt_en == TIMER_ENABLE) timer->DIER |= (1 << (TIM_DIER_CC1IE_Pos + i));
   }
 
   // Lastly, enable the timer
-  timer->CR1 |= (1 << TIM_CR1_CEN_Pos);
+  if (cfg->start_enabled == TIMER_ENABLE) timer->CR1 |= (1 << TIM_CR1_CEN_Pos);
 
   return 0;
 }
 
 /**
  * @brief  Sets the PWM value for a specified timer channel.
- * 
+ *
  * This function sets the PWM value for a given timer channel by writing
  * the value to the appropriate Capture/Compare Register (CCR).
- * 
+ *
  * @param  timer   Pointer to the TIM_TypeDef structure that contains
  *                 the configuration information for the specified timer.
  * @param  channel The timer channel to set the PWM value for (1 to 4).
  * @param  pwm_val The PWM value to set.
- * 
+ *
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
@@ -210,15 +211,15 @@ int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
 
 /**
  * @brief  Sets the PWM duty cycle percentage for a specified timer channel.
- * 
+ *
  * This function calculates the PWM value based on the percentage provided
  * and sets it for the specified timer channel.
- * 
+ *
  * @param  timer   Pointer to the TIM_TypeDef structure that contains
  *                 the configuration information for the specified timer.
  * @param  channel The timer channel to set the PWM value for.
  * @param  pct     The desired PWM duty cycle percentage (0.0 to 100.0).
- * 
+ *
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL.
  */
 int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float pct) {
@@ -233,7 +234,7 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
 
 /**
  * @brief Get the current timer ticks for a specific channel.
- * 
+ *
  * @param timer Pointer to the TIM_TypeDef structure.
  * @param channel Timer channel number.
  * @return uint16_t Current timer ticks.
@@ -249,7 +250,7 @@ uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel
 
 /**
  * @brief Get the period ticks of the timer.
- * 
+ *
  * @param timer Pointer to the TIM_TypeDef structure.
  * @return uint16_t Timer period ticks.
  */
@@ -257,14 +258,14 @@ uint16_t timer_get_period_ticks(const TIM_TypeDef *timer) { return timer->ARR; }
 
 /**
  * @brief Configure the timer IRQ interrupt.
- * 
+ *
  * @param irq_number IRQ number.
  * @param en_state Enable or disable state.
  */
 void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state) {
   // Enables or disables NVIC
   // Programs ISER if enable, programs ICER if disable
-  if (en_state == TIMER_IRQ_ENABLE)
+  if (en_state == TIMER_ENABLE)
     NVIC->ISER[irq_number / 32] |= (1 << (irq_number % 32));
   else
     NVIC->ICER[irq_number / 32] |= (1 << (irq_number % 32));
@@ -272,7 +273,7 @@ void timer_irq_interrupt_config(const uint8_t irq_number, const uint8_t en_state
 
 /**
  * @brief Configure the priority of the timer IRQ.
- * 
+ *
  * @param irq_number IRQ number.
  * @param irq_priority IRQ priority.
  */
@@ -286,7 +287,7 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
 
 /**
  * @brief Handle the timer IRQ.
- * 
+ *
  * @param timer Pointer to the TIM_TypeDef structure.
  * @param channel Timer channel number.
  * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
