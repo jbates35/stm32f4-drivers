@@ -6,6 +6,7 @@
 #define INC_STM34F446XX_TIMER_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "stm32f446xx.h"
 
@@ -190,5 +191,39 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
  * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
  */
 int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel);
+
+/**
+ * @brief Enables the specified timer.
+ *
+ * This function sets the CEN (Counter Enable) bit in the CR1 register
+ * of the specified timer to start the timer.
+ *
+ * @param timer Pointer to the TIM_TypeDef structure representing the timer.
+ *              Must not be NULL.
+ *
+ * @return int Returns 0 on success, or -1 if the timer pointer is NULL.
+ */
+static inline int timer_enable(TIM_TypeDef *timer) {
+  if (timer == NULL) return -1;
+  timer->CR1 |= (1 << TIM_CR1_CEN_Pos);
+  return 0;
+}
+
+/**
+ * @brief Disables the specified timer.
+ *
+ * This function clears the CEN (Counter Enable) bit in the CR1 register
+ * of the specified timer to stop the timer.
+ *
+ * @param timer Pointer to the TIM_TypeDef structure representing the timer.
+ *              Must not be NULL.
+ *
+ * @return int Returns 0 on success, or -1 if the timer pointer is NULL.
+ */
+static inline int timer_disable(TIM_TypeDef *timer) {
+  if (timer == NULL) return -1;
+  timer->CR1 &= ~(1 << TIM_CR1_CEN_Pos);
+  return 0;
+}
 
 #endif
