@@ -92,9 +92,9 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
   // Set direction of the timer
   if (cfg->direction == TIMER_DIR_UP)
-    timer->CR1 &= ~(1 << TIM_CR1_DIR);
+    timer->CR1 &= ~(1 << TIM_CR1_DIR_Pos);
   else if (cfg->direction == TIMER_DIR_DOWN)
-    timer->CR1 |= (1 << TIM_CR1_DIR);
+    timer->CR1 |= (1 << TIM_CR1_DIR_Pos);
 
   // Enable the Trigger
   uint8_t trig_assign = cfg->trigger_assignment;
