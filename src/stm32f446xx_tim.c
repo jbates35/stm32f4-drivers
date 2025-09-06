@@ -173,6 +173,9 @@ int timer_init(const TimerHandle_t *timer_handle) {
     if (channel_cfg[i]->interrupt_en == TIMER_ENABLE) timer->DIER |= (1 << (TIM_DIER_CC1IE_Pos + i));
   }
 
+  // Force all values to be forced into their shadow registers
+  timer->EGR |= (0b1 << TIM_EGR_UG_Pos);
+
   // Lastly, enable the timer
   if (cfg->start_enabled == TIMER_ENABLE) timer->CR1 |= (1 << TIM_CR1_CEN_Pos);
 
