@@ -12,7 +12,6 @@
 
 typedef enum {
   TIMER_CHANNEL_MODE_COMPARE = 0,
-  TIMER_CHANNEL_MODE_ONESHOT,
   TIMER_CHANNEL_MODE_CAPTURE,
   TIMER_CHANNEL_MODE_PWM_HI,
   TIMER_CHANNEL_MODE_PWM_LO
@@ -76,6 +75,7 @@ typedef struct {
   uint16_t prescaler;
   TimerClockDivider_t clock_divider;
   TimerDir_t direction;
+  TimerEnable_t one_shot_enabled;
   uint8_t channel_count;
   TimerTrigAssign_t trigger_assignment;
   TimerChannelConfig_t channel_1;
