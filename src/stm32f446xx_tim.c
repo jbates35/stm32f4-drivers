@@ -113,7 +113,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
     // Configure the output mode accordingly
     TimerChanMode_t channel_mode = channel_cfg[i]->channel_mode;
-    if (channel_mode == TIMER_CHANNEL_MODE_COMPARE || channel_mode == TIMER_CHANNEL_MODE_ONESHOT) {
+    if (channel_mode == TIMER_CHANNEL_MODE_COMPARE) {
       // Ensure the timer is set to output capture mode
       *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
 
@@ -124,7 +124,6 @@ int timer_init(const TimerHandle_t *timer_handle) {
 
       ///// NOTE: If pre-load is enabled, it should go here
 
-      if (channel_mode == TIMER_CHANNEL_MODE_ONESHOT) timer->CR1 |= (1 << TIM_CR1_OPM_Pos);
     } else if (channel_mode == TIMER_CHANNEL_MODE_CAPTURE) {
       // Change the timer to input capture mode
       *ccmr_reg[i] &= ~(0b11 << ((TIM_CCMR1_CC1S_Pos + i * 8) % 16));
