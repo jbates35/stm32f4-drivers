@@ -96,6 +96,9 @@ int timer_init(const TimerHandle_t *timer_handle) {
   else if (cfg->direction == TIMER_DIR_DOWN)
     timer->CR1 |= (1 << TIM_CR1_DIR_Pos);
 
+  // Enable one_soht mode if asked for
+  if (cfg->one_shot_enabled == TIMER_ENABLE) timer->CR1 |= (1 << TIM_CR1_OPM_Pos);
+
   // Enable the Trigger
   uint8_t trig_assign = cfg->trigger_assignment;
   if (trig_assign > 0b111) trig_assign = 0;
