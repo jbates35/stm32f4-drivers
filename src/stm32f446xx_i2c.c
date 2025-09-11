@@ -125,10 +125,7 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   if (cfg->dma_enable) cr2_word |= (1 << I2C_CR2_DMAEN_Pos);
 
   // Interrupt enable
-  // if (cfg->interrupt_enable) {
-  //   cr2_word |= (1 << I2C_CR2_ITBUFEN_Pos);
-  //   cr2_word |= (1 << I2C_CR2_ITEVTEN_Pos);
-  // }
+  if (cfg->interrupt_enable) cr2_word |= (1 << I2C_CR2_ITEVTEN_Pos | 1 << I2C_CR2_ITERREN_Pos);
 
   // Tell i2c peripheral how fast frequency is
   cr2_word |= (freq_mhz << I2C_CR2_FREQ_Pos);

@@ -60,7 +60,7 @@ volatile static inline I2CInterruptInfo_t *get_i2c_int_info(const I2C_TypeDef *i
   return NULL;
 }
 
-I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t setup_info) {
+I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t *setup_info) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
 
@@ -68,32 +68,30 @@ I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptCo
   if (int_info->status == I2C_INTERRUPT_STATUS_BUSY) return I2C_STATUS_INTERRUPT_BUSY;
 
   // TX specific buffer
-  int_info->tx.buff = setup_info.tx.buff;
-  int_info->tx.len = setup_info.tx.len;
-  int_info->tx.eles_left = setup_info.tx.len;
+  int_info->tx.buff = setup_info->tx.buff;
+  int_info->tx.len = setup_info->tx.len;
+  int_info->tx.eles_left = setup_info->tx.len;
+
+  if (int_info->tx.buff != NULL && int_info->tx.len >= 0)
+    int_info->tx.en = I2C_ENABLE;
+  else
+    int_info->tx.en = I2C_DISABLE;
+
+  // Enable if tx stuff has buffer was assigned and length isn't 0
+  int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
 
   // RX specific buffer
-  int_info->rx.buff = setup_info.rx.buff;
-  int_info->rx.len = setup_info.rx.len;
-  int_info->rx.eles_left = setup_info.rx.len;
+  int_info->rx.buff = setup_info->rx.buff;
+  int_info->rx.len = setup_info->rx.len;
+  int_info->rx.eles_left = setup_info->rx.len;
+
+  // Enable if rx stuff has buffer was assigned and length isn't 0
+  int_info->rx.en = (int_info->rx.buff != NULL && int_info->rx.len) ? I2C_ENABLE : I2C_DISABLE;
 
   // General interrupt stuff
-  int_info->address = setup_info.address;
-  int_info->circular = setup_info.circular;
-
-  return I2C_STATUS_OK;
-}
-
-I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en) {
-  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
-
-  if (type == I2C_TXRX_DIR_SEND)
-    int_info->tx.en = en;
-  else if (type == I2C_TXRX_DIR_RECEIVE)
-    int_info->rx.en = en;
-  else
-    return I2C_STATUS_INVALID_I2C_INT_TYPE;
+  int_info->address = setup_info->address;
+  int_info->circular = setup_info->circular;
+  int_info->callback = setup_info->callback;
 
   return I2C_STATUS_OK;
 }
@@ -321,10 +319,6 @@ I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
-I2CStatus_t i2c_assign_interrupt_cb(const I2C_TypeDef *i2c_reg, void (*callback)(void)) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
 
-  int_info->callback = callback;
-  return I2C_STATUS_OK;
 }

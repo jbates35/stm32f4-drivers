@@ -61,6 +61,7 @@ typedef struct {
   I2CBuffer_t rx;
   uint8_t address;
   I2CInterruptCircular_t circular;
+  void (*callback)(void);
 } I2CInterruptConfig_t;
 
 /**
@@ -77,6 +78,7 @@ typedef struct {
   I2CSlaveSetup_t slave_setup;
   I2CSclMode_t scl_mode;
   I2CFMDutyCycle_t fm_duty_cycle;
+  I2CEnable_t interrupt_enable;
   I2CEnable_t dma_enable;
   I2CEnable_t enable_on_init;
 } I2CConfig_t;
@@ -93,13 +95,11 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
                             I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);
 
-I2CStatus_t i2c_setup_interrupt(const I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t setup_info);
-I2CStatus_t i2c_enable_interrupt(const I2C_TypeDef *i2c_reg, I2CTxRxDirection_t type, I2CEnable_t en);
+I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t *setup_info);
 I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg);
 I2CStatus_t i2c_start_interrupt(I2C_TypeDef *i2c_reg);
 I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg);
-I2CStatus_t i2c_assign_interrupt_cb(const I2C_TypeDef *i2c_reg, void (*callback)(void));
 
 #endif
