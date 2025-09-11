@@ -91,6 +91,7 @@ typedef struct {
 I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en);
 I2CStatus_t i2c_init(I2CHandle_t *i2c_handle);
 I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg);
+I2CStatus_t i2c_enable(I2C_TypeDef *i2c_reg);
 I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
                             I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);

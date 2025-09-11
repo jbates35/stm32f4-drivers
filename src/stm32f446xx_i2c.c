@@ -182,6 +182,14 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+I2CStatus_t i2c_enable(I2C_TypeDef *i2c_reg) {
+  int index = get_i2c_index(i2c_reg);
+  if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  i2c_reg->CR1 |= I2C_CR1_PE;
+  return I2C_STATUS_OK;
+}
+
 static inline void i2c_start_blocking(I2C_TypeDef *i2c_reg, I2CEnable_t ack_en) {
   // Initiate transfer with start byte
   i2c_reg->CR1 |= (ack_en << I2C_CR1_ACK_Pos) | (1 << I2C_CR1_START_Pos);
