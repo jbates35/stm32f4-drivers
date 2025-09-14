@@ -65,9 +65,9 @@ int dma_peri_clock_control(const DMA_TypeDef *base_addr, const DMAEnable_t en_st
  * @return int        Returns 0 on success, -1 on error.
  */
 int dma_stream_init(const DMAHandle_t *dma_handle) {
-  if (dma_handle == NULL || dma_handle->p_stream_addr == NULL) return -1;
+  if (dma_handle == NULL || dma_handle->stream_addr == NULL) return -1;
 
-  DMA_Stream_TypeDef *stream = dma_handle->p_stream_addr;
+  DMA_Stream_TypeDef *stream = dma_handle->stream_addr;
   const DMAConfig_t *cfg = &(dma_handle->cfg);
 
   // Get direction of transmission and validate
@@ -88,15 +88,15 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
   switch (dir) {
     case 0b00:
     case 0b10:
-      stream->PAR = cfg->in.addr;
+      stream->PAR = (uintptr_t)cfg->in.addr;
       stream->CR |= (cfg->in.inc << DMA_SxCR_PINC_Pos);
-      stream->M0AR = cfg->out.addr;
+      stream->M0AR = (uintptr_t)cfg->out.addr;
       stream->CR |= (cfg->out.inc << DMA_SxCR_MINC_Pos);
       break;
     case 0b01:
-      stream->M0AR = cfg->in.addr;
+      stream->M0AR = (uintptr_t)cfg->in.addr;
       stream->CR |= (cfg->in.inc << DMA_SxCR_MINC_Pos);
-      stream->PAR = cfg->out.addr;
+      stream->PAR = (uintptr_t)cfg->out.addr;
       stream->CR |= (cfg->out.inc << DMA_SxCR_PINC_Pos);
       break;
   }
@@ -150,6 +150,28 @@ void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size) {
   dma_stream_dis(stream);
   stream->NDTR = (uint32_t)buffer_size;
   dma_stream_en(stream);
+}
+
+/**
+ * @brief Re-assign memory address.
+ *
+ * This function is used to assign the memory addresses in the DMA stream peripheral
+ * Note: DMA stream must be disabled to re-assign memory address
+ *
+ * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
+ * @param ptr_addr The ptr of the array to assign to the DMA stream memory reg to
+ * @param addr_reg Whether mem0 or mem1
+ */
+void dma_set_buffer(DMA_Stream_TypeDef *stream, volatile void *ptr_addr, DMAAddress_t addr_reg) {
+  if (stream == NULL) return;
+
+  uint8_t stream_en = (stream->CR & DMA_SxCR_EN);
+  if (stream_en) dma_stream_dis(stream);
+
+  if (addr_reg == DMA_ADDRESS_MEMORY_0) stream->M0AR = (uintptr_t)ptr_addr;
+  if (addr_reg == DMA_ADDRESS_MEMORY_1) stream->M1AR = (uintptr_t)ptr_addr;
+
+  if (stream_en) dma_stream_en(stream);
 }
 
 /**
