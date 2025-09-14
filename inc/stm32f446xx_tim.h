@@ -120,6 +120,22 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
 int timer_init(const TimerHandle_t *timer_handle);
 
 /**
+ * @brief  Sets the ccr value for a specified timer channel.
+ *
+ * This function sets the ccr value for a given timer channel by writing
+ * the value to the appropriate Capture/Compare Register (CCR).
+ *
+ * @param  timer   Pointer to the TIM_TypeDef structure that contains
+ *                 the configuration information for the specified timer.
+ * @param  channel The timer channel to set the ccr value for (1 to 4).
+ * @param  ccr_val The ccr value to set.
+ *
+ * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
+ *                 -2 if the channel is invalid.
+ */
+int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t ccr_val);
+
+/**
  * @brief  Sets the PWM value for a specified timer channel.
  *
  * This function sets the PWM value for a given timer channel by writing
@@ -133,7 +149,9 @@ int timer_init(const TimerHandle_t *timer_handle);
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
-int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val);
+static inline int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
+  return timer_set_ccr(timer, channel, pwm_val);
+}
 
 /**
  * @brief  Sets the PWM duty cycle percentage for a specified timer channel.

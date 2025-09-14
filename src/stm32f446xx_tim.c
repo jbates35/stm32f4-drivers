@@ -200,7 +200,7 @@ int timer_init(const TimerHandle_t *timer_handle) {
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
-int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
+int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
   if (timer == NULL) return -1;  // Error: null pointer
 
   // Grab the correct CCR register so we can load the pwm value in
