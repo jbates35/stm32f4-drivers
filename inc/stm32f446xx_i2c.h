@@ -64,6 +64,15 @@ typedef struct {
   void (*callback)(void);
 } I2CInterruptConfig_t;
 
+typedef struct {
+  I2CBuffer_t tx;
+  I2CBuffer_t rx;
+  uint8_t address;
+  DMA_Stream_TypeDef tx_stream;
+  DMA_Stream_TypeDef rx_stream;
+  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef, uint16_t);
+} I2CDMAConfig_t;
+
 /**
  * @brief I2C configuration structure
  * @param peri_clock_speed The speed of the peripheral clock (APB1);
@@ -92,15 +101,26 @@ I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t
 I2CStatus_t i2c_init(I2CHandle_t *i2c_handle);
 I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg);
 I2CStatus_t i2c_enable(I2C_TypeDef *i2c_reg);
+
+/** BLOCKING **/
 I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
                             I2CStop_t stop_at_end);
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr);
 
+/** INTERRUPTS **/
 I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t *setup_info);
 I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg);
 I2CStatus_t i2c_start_interrupt(I2C_TypeDef *i2c_reg);
 I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg);
 I2CIRQType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg);
+
+I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg);
+I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConfig_t *setup_info);
+I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg);                        // Goes in I2C EV
+I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirection_t dir);  // Goes into DMA EOT
+
+// NOT COMPLETED:
+// Any of this in slave mode. If I need them, I'll write them as I go
 
 #endif

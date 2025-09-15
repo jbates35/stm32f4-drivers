@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <string.h>
 
 #include "stm32f446xx.h"
 #include "stm32f446xx_i2c.h"
@@ -20,12 +20,16 @@ typedef struct {
   I2CEnable_t en;
 } I2CInterruptBuffer_t;
 
+// Also used for DMA
 typedef struct {
   I2CInterruptBuffer_t tx;
   I2CInterruptBuffer_t rx;
   I2CInterruptStatus_t status;
   uint8_t address;
   I2CInterruptCircular_t circular;
+  DMA_Stream_TypeDef tx_stream;
+  DMA_Stream_TypeDef rx_stream;
+  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef, uint16_t);
   void (*callback)(void);
 } I2CInterruptInfo_t;
 
@@ -60,6 +64,21 @@ volatile static inline I2CInterruptInfo_t *get_i2c_int_info(const I2C_TypeDef *i
   return NULL;
 }
 
+static inline void clear_i2c_info(volatile I2CInterruptInfo_t *int_info) {
+  int_info->tx.buff = 0;
+  int_info->tx.len = 0;
+  int_info->tx.eles_left = 0;
+  int_info->tx.en = I2C_DISABLE;
+  int_info->rx.buff = 0;
+  int_info->rx.len = 0;
+  int_info->rx.eles_left = 0;
+  int_info->rx.en = I2C_DISABLE;
+  int_info->status = I2C_INTERRUPT_STATUS_READY;
+  int_info->address = 0;
+  int_info->callback = 0;
+  int_info->circular = 0;
+}
+
 I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t *setup_info) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -67,15 +86,13 @@ I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t
   // Maybe have a look at this line ...
   if (int_info->status == I2C_INTERRUPT_STATUS_BUSY) return I2C_STATUS_INTERRUPT_BUSY;
 
+  // Clear anything in that int_info buff
+  clear_i2c_info(int_info);
+
   // TX specific buffer
   int_info->tx.buff = setup_info->tx.buff;
   int_info->tx.len = setup_info->tx.len;
   int_info->tx.eles_left = setup_info->tx.len;
-
-  if (int_info->tx.buff != NULL && int_info->tx.len >= 0)
-    int_info->tx.en = I2C_ENABLE;
-  else
-    int_info->tx.en = I2C_DISABLE;
 
   // Enable if tx stuff has buffer was assigned and length isn't 0
   int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
@@ -247,8 +264,6 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
   I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
 
-  if (irq_reason == I2C_IRQ_TYPE_NONE || int_info->status == I2C_INTERRUPT_STATUS_ERROR) return int_info->status;
-
   I2CIntTransferStatus_t tstatus = I2C_INT_TSTATUS_OK;
 
   if (int_info->tx.en) {
@@ -319,6 +334,57 @@ I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
 
+  // Start transaction, change struct to busy so user knows they shouldn't touch CRs and what not
+  i2c_reg->CR1 |= I2C_CR1_START;
+
+  return I2C_STATUS_OK;
 }
+
+I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConfig_t *setup_info) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // Clear anything in that int_info buff
+  clear_i2c_info(int_info);
+
+  // TX specific buffer
+  int_info->tx.buff = setup_info->tx.buff;
+  int_info->tx.len = setup_info->tx.len;
+
+  // Enable if tx stuff has buffer was assigned and length isn't 0
+  int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
+
+  // RX specific buffer
+  int_info->rx.buff = setup_info->rx.buff;
+  int_info->rx.len = setup_info->rx.len;
+
+  // Enable if rx stuff has buffer was assigned and length isn't 0
+  int_info->rx.en = (int_info->rx.buff != NULL && int_info->rx.len) ? I2C_ENABLE : I2C_DISABLE;
+
+  // General interrupt stuff
+  int_info->address = setup_info->address;
+  int_info->tx_stream = setup_info->tx_stream;
+  int_info->rx_stream = setup_info->rx_stream;
+  int_info->dma_start_transfer_cb = setup_info->dma_start_transfer_cb;
+
+  return I2C_STATUS_OK;
+}
+/*
+
+typedef struct {
+  I2CInterruptBuffer_t tx;
+  I2CInterruptBuffer_t rx;
+  I2CInterruptStatus_t status;
+  uint8_t address;
+  I2CInterruptCircular_t circular;
+  void (*callback)(void);
+} I2CInterruptInfo_t;
+
+static volatile I2CInterruptInfo_t i2c_interrupt_info[I2CS_NUM] = {0};
+
+
+   */
