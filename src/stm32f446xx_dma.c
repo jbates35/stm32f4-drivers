@@ -144,7 +144,7 @@ int dma_stream_init(const DMAHandle_t *dma_handle) {
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param buffer_size The number of elements to transfer before the DMA disables again.
  */
-void dma_start_transfer(DMA_Stream_TypeDef *stream, uint16_t buffer_size) {
+void dma_start_transfer(DMA_Stream_TypeDef *stream, uint32_t buffer_size) {
   if (stream == NULL) return;
 
   dma_stream_dis(stream);
