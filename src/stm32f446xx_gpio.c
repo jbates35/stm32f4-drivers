@@ -9,6 +9,10 @@
 #define GPIO_SIZE(arr) (int)sizeof(arr) / sizeof(GPIO_TypeDef *)
 
 #define SYSCFG_ENABLE() (RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN)
+
+// Helper function delcarations:
+int GPIO_peri_clock_is_enabled(const GPIO_TypeDef *p_GPIO_addr);
+
 /*
  * Peripheral clock setup for GPIO
  *
@@ -18,7 +22,7 @@
 void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const GPIOPeriClockEnable_t en_state) {
   if (p_GPIO_addr == NULL) return;
 
-  static GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;
+  GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;
 
   for (int i = 0; i < GPIO_SIZE(GPIO_base_addrs); i++) {
     if (GPIO_base_addrs[i] != p_GPIO_addr) continue;
@@ -28,6 +32,26 @@ void GPIO_peri_clock_control(const GPIO_TypeDef *p_GPIO_addr, const GPIOPeriCloc
     else
       RCC->AHB1ENR &= ~(1 << i);
   }
+}
+
+/*
+ * Return the state of the GPIO peripheral clock
+ *
+ * @param p_GPIO_addr Pointer to base address for gpio peripheral
+ *
+ * @return 1 if enabled, 0 if not, -1 if error
+ */
+int GPIO_peri_clock_is_enabled(const GPIO_TypeDef *p_GPIO_addr) {
+  if (p_GPIO_addr == NULL) return -1;
+
+  GPIO_TypeDef *const GPIO_base_addrs[8] = GPIOS;
+
+  for (int i = 0; i < GPIO_SIZE(GPIO_base_addrs); i++) {
+    if (GPIO_base_addrs[i] != p_GPIO_addr) continue;
+    return (RCC->AHB1ENR & (1 << i)) > 0;
+  }
+
+  return -1;
 }
 
 /*
@@ -251,4 +275,29 @@ int GPIO_irq_handling(uint8_t pin) {
     return 1;
   }
   return 0;
+}
+
+void GPIO_i2c_bus_reset(GPIO_TypeDef *scl_gpio_port, const uint8_t scl_pin) {
+  int gpio_enabled = GPIO_peri_clock_is_enabled(scl_gpio_port);
+  GPIO_peri_clock_control(scl_gpio_port, GPIO_CLOCK_ENABLE);
+
+  GPIOConfig_t dummy_toggles_cfg = {.mode = GPIO_MODE_OUT,
+                                    .speed = GPIO_SPEED_HIGH,
+                                    .float_resistor = GPIO_PUPDR_NONE,
+                                    .output_type = GPIO_OP_TYPE_OPENDRAIN,
+                                    .alt_func_num = 4,
+                                    .pin_number = scl_pin};
+  GPIOHandle_t dummy_toggles = {.p_GPIO_addr = scl_gpio_port, .cfg = dummy_toggles_cfg};
+  GPIO_init(&dummy_toggles);
+
+  GPIO_set_output(scl_gpio_port, scl_pin, 1);
+
+  for (int i = 0; i < 9; i++) {
+    GPIO_set_output(scl_gpio_port, scl_pin, 0);
+    for (int i = 0; i < 16; i++);
+    GPIO_set_output(scl_gpio_port, scl_pin, 1);
+    for (int i = 0; i < 16; i++);
+  }
+
+  if (!gpio_enabled) GPIO_peri_clock_control(scl_gpio_port, GPIO_CLOCK_DISABLE);
 }

@@ -50,8 +50,8 @@ typedef enum {
 typedef enum { GPIO_PUPDR_NONE = 0, GPIO_PUPDR_PULLUP = 1, GPIO_PUPDR_PULLDOWN = 2 } GPIOPuPdRBit_t;
 
 /**
-* GPIO peripheral clock enable/disable
-*/
+ * GPIO peripheral clock enable/disable
+ */
 typedef enum { GPIO_PERI_CLOCK_DISABLE = 0, GPIO_PERI_CLOCK_ENABLE } GPIOPeriClockEnable_t;
 
 /**
@@ -59,7 +59,8 @@ typedef enum { GPIO_PERI_CLOCK_DISABLE = 0, GPIO_PERI_CLOCK_ENABLE } GPIOPeriClo
  * @param pin_number: the pin associated with the particular port (i.e. 5 if PE5)
  * @param mode: the mode of the pin (i.e. input, output, etc.)
  * @param speed: the speed of the pin (i.e. low, medium, high, etc.)
- * @param float_resistor: the pull up/pull down configuration of the pin so the input is driven a certain way when floating
+ * @param float_resistor: the pull up/pull down configuration of the pin so the input is driven a certain way when
+ * floating
  * @param output_type: the output type of the pin (i.e. push-pull or open drain)
  * @param alt_func_num: the alternate function mode of the pin
  */
@@ -103,5 +104,11 @@ void GPIO_toggle_output(GPIO_TypeDef *p_GPIO_x, uint8_t pin);
 void GPIO_irq_interrupt_config(uint8_t irq_number, uint8_t en_state);
 void GPIO_irq_priority_config(uint8_t irq_number, uint8_t irq_priority);
 int GPIO_irq_handling(uint8_t pin);
+
+/*
+ *
+ * Related to other peripherals
+ */
+void GPIO_i2c_bus_reset(GPIO_TypeDef *scl_gpio_port, const uint8_t scl_pin);
 
 #endif /* INC_STM32H723XX_GPIO_H_ */
