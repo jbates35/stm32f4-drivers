@@ -47,6 +47,10 @@ static inline int get_i2c_index(const I2C_TypeDef *addr) {
   return i2c_index;
 }
 
+static inline int is_i2c_instance(I2C_TypeDef *i2c_reg) {
+  return (i2c_reg == I2C1 || i2c_reg == I2C2 || i2c_reg == I2C3);
+}
+
 static inline uint8_t get_status(const I2C_TypeDef *i2c_reg, const uint32_t mask) {
   if (i2c_reg->SR1 & mask) return 1;
   return 0;
@@ -179,7 +183,7 @@ static inline void init_xmission(I2C_TypeDef *i2c_reg, uint8_t rx) {
   (void)i2c_reg->SR2;
 }
 
-static inline void init_xmission_dma(I2C_TypeDef *i2c_reg, I2CInterruptInfo_t *int_info, uint8_t rx) {
+static inline void init_xmission_dma(I2C_TypeDef *i2c_reg, volatile I2CInterruptInfo_t *int_info, uint8_t rx) {
   // If rx, it needs acks sent
   if (rx && int_info->rx.len > 1) i2c_reg->CR1 |= I2C_CR1_ACK;
 
@@ -232,6 +236,23 @@ static inline I2CIntTransferStatus_t end_send_data(I2C_TypeDef *i2c_reg, volatil
   int_info->tx.en = I2C_DISABLE;
 
   return I2C_INT_TSTATUS_OK;
+}
+
+static inline void end_send_data_dma(I2C_TypeDef *i2c_reg, I2CTxRxDirection_t dir, uint8_t repeated_start) {
+  // After TXE, need to make sure shift register is also cleared
+  i2c_reg->CR2 &= ~(I2C_CR2_DMAEN);
+
+  if (dir == I2C_TXRX_DIR_RECEIVE) {
+    i2c_reg->CR1 &= ~I2C_CR1_ACK;
+  } else {
+    while (!(i2c_reg->SR1 & I2C_SR1_BTF));
+  }
+
+  if (repeated_start)
+    i2c_reg->CR1 |= I2C_CR1_START;
+  else {
+    i2c_reg->CR1 |= I2C_CR1_STOP;
+  }
 }
 
 static inline I2CIntTransferStatus_t single_byte_setup(I2C_TypeDef *i2c_reg, volatile I2CInterruptBuffer_t *rx_buff) {
@@ -291,92 +312,6 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
       send_addr(i2c_reg, 0x68, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
-      init_xmission_dma(i2c_reg, 0);
-    }
-  } else if (int_info->rx.en) {
-    // RX:
-    if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 1);
-    } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
-      init_xmission_dma(i2c_reg, 1);
-      // Special method required to set up if length of transfer is just 1
-      if (int_info->rx.len == 1) tstatus = single_byte_setup(i2c_reg, &int_info->rx);
-    }
-  }
-
-  // If there was a problem, set to error and return as such
-  if (tstatus != I2C_INT_TSTATUS_OK) {
-    int_info->status = I2C_INTERRUPT_STATUS_ERROR;
-    return int_info->status;
-  }
-}
-
-I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
-  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
-
-  // TX specific buffer
-  int_info->tx.eles_left = int_info->tx.len;
-  int_info->tx.en = I2C_ENABLE;
-
-  // RX specific buffer
-  int_info->rx.eles_left = int_info->rx.len;
-  int_info->rx.en = I2C_ENABLE;
-
-  return I2C_STATUS_OK;
-}
-
-I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg) {
-  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
-
-  // Start transaction, change struct to busy so user knows they shouldn't touch CRs and what not
-  i2c_reg->CR1 |= I2C_CR1_START;
-
-  return I2C_STATUS_OK;
-}
-
-I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConfig_t *setup_info) {
-  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
-
-  // Clear anything in that int_info buff
-  clear_i2c_info(int_info);
-
-  // TX specific buffer
-  int_info->tx.buff = setup_info->tx.buff;
-  int_info->tx.len = setup_info->tx.len;
-
-  // Enable if tx stuff has buffer was assigned and length isn't 0
-  int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
-
-  // RX specific buffer
-  int_info->rx.buff = setup_info->rx.buff;
-  int_info->rx.len = setup_info->rx.len;
-
-  // Enable if rx stuff has buffer was assigned and length isn't 0
-  int_info->rx.en = (int_info->rx.buff != NULL && int_info->rx.len) ? I2C_ENABLE : I2C_DISABLE;
-
-  // General interrupt stuff
-  int_info->address = setup_info->address;
-  int_info->tx_stream = setup_info->tx_stream;
-  int_info->rx_stream = setup_info->rx_stream;
-  int_info->dma_start_transfer_cb = setup_info->dma_start_transfer_cb;
-
-  return I2C_STATUS_OK;
-}
-
-I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
-  I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
-  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
-
-  I2CIntTransferStatus_t tstatus = I2C_INT_TSTATUS_OK;
-
-  if (int_info->tx.en) {
-    // TX:
-    if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 0);
-    } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission(i2c_reg, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_TXE && int_info->tx.eles_left) {
       tstatus = send_data(i2c_reg, &int_info->tx);
@@ -424,6 +359,126 @@ I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
   return int_info->status;
 }
 
+I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // TX specific buffer
+  int_info->tx.eles_left = int_info->tx.len;
+  int_info->tx.en = I2C_ENABLE;
+
+  // RX specific buffer
+  int_info->rx.eles_left = int_info->rx.len;
+  int_info->rx.en = I2C_ENABLE;
+
+  int_info->status = I2C_INTERRUPT_STATUS_READY;
+
+  return I2C_STATUS_OK;
+}
+
+I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // Start transaction, change struct to busy so user knows they shouldn't touch CRs and what not
+  int_info->status = I2C_INTERRUPT_STATUS_BUSY;
+  i2c_reg->CR1 |= I2C_CR1_START;
+
+  return I2C_STATUS_OK;
+}
+
+I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConfig_t *setup_info) {
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+  if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
+
+  // Clear anything in that int_info buff
+  clear_i2c_info(int_info);
+
+  // TX specific buffer
+  int_info->tx.buff = setup_info->tx.buff;
+  int_info->tx.len = setup_info->tx.len;
+
+  // Enable if tx stuff has buffer was assigned and length isn't 0
+  int_info->tx.en = (int_info->tx.buff && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
+
+  // RX specific buffer
+  int_info->rx.buff = setup_info->rx.buff;
+  int_info->rx.len = setup_info->rx.len;
+
+  // Enable if rx stuff has buffer was assigned and length isn't 0
+  int_info->rx.en = (int_info->rx.buff && int_info->rx.len) ? I2C_ENABLE : I2C_DISABLE;
+
+  // General interrupt stuff
+  int_info->address = setup_info->address;
+  int_info->tx_stream = setup_info->tx_stream;
+  int_info->rx_stream = setup_info->rx_stream;
+  int_info->dma_start_transfer_cb = setup_info->dma_start_transfer_cb;
+
+  return I2C_STATUS_OK;
+}
+
+I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
+  if (!is_i2c_instance(i2c_reg)) return I2C_INTERRUPT_STATUS_INVALID_ADDR;
+
+  I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+
+  I2CIntTransferStatus_t tstatus = I2C_INT_TSTATUS_OK;
+
+  if (int_info->tx.en) {
+    // TX:
+    if (irq_reason == I2C_IRQ_TYPE_STARTED) {
+      send_addr(i2c_reg, 0x68, 0);
+    } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
+      init_xmission_dma(i2c_reg, int_info, 0);
+    }
+  } else if (int_info->rx.en) {
+    // RX:
+    if (irq_reason == I2C_IRQ_TYPE_STARTED) {
+      send_addr(i2c_reg, 0x68, 1);
+    } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
+      init_xmission_dma(i2c_reg, int_info, 1);
+    }
+  }
+
+  // If there was a problem, set to error and return as such
+  if (tstatus != I2C_INT_TSTATUS_OK) int_info->status = I2C_INTERRUPT_STATUS_ERROR;
+  return int_info->status;
+}
+
+I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirection_t dir) {
+  if (!is_i2c_instance(i2c_reg)) return I2C_INTERRUPT_STATUS_INVALID_ADDR;
+
+  I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
+  volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
+
+  if (dir == I2C_TXRX_DIR_SEND) {
+    uint8_t repeated_start = int_info->rx.en ? 1 : 0;
+    end_send_data_dma(i2c_reg, dir, repeated_start);
+    int_info->tx.en = I2C_DISABLE;
+    if (repeated_start) i2c_start_interrupt_dma(i2c_reg);
+  }
+
+  if (dir == I2C_TXRX_DIR_RECEIVE) {
+    end_send_data_dma(i2c_reg, dir, 0);
+    int_info->rx.en = I2C_DISABLE;
+  }
+
+  uint8_t tx_en = (int_info->tx.en == I2C_ENABLE);
+  uint8_t rx_en = (int_info->rx.en == I2C_ENABLE);
+
+  if (!tx_en && !rx_en) {
+    int_info->status = I2C_INTERRUPT_STATUS_DONE;
+    if (int_info->callback) int_info->callback();
+
+    if (int_info->circular == I2C_INTERRUPT_CIRCULAR) {
+      if (int_info->tx.buff && int_info->tx.len) int_info->tx.en = I2C_ENABLE;
+      if (int_info->rx.buff && int_info->rx.len) int_info->rx.en = I2C_ENABLE;
+      i2c_start_interrupt_dma(i2c_reg);
+    }
+  }
+  return int_info->status;
+}
 /*
 
 typedef struct {
