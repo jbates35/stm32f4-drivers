@@ -1,5 +1,3 @@
-#include <string.h>
-
 #include "stm32f446xx.h"
 #include "stm32f446xx_i2c.h"
 
@@ -27,9 +25,9 @@ typedef struct {
   I2CInterruptStatus_t status;
   uint8_t address;
   I2CInterruptCircular_t circular;
-  DMA_Stream_TypeDef tx_stream;
-  DMA_Stream_TypeDef rx_stream;
-  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef, uint16_t);
+  DMA_Stream_TypeDef *tx_stream;
+  DMA_Stream_TypeDef *rx_stream;
+  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef *, uint32_t);
   void (*callback)(void);
 } I2CInterruptInfo_t;
 
@@ -400,6 +398,7 @@ I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConf
 
   // Enable if tx stuff has buffer was assigned and length isn't 0
   int_info->tx.en = (int_info->tx.buff && int_info->tx.len) ? I2C_ENABLE : I2C_DISABLE;
+  if (int_info->tx.en) setup_info->dma_set_buffer_cb(setup_info->tx_stream, int_info->tx.buff);
 
   // RX specific buffer
   int_info->rx.buff = setup_info->rx.buff;
@@ -407,9 +406,13 @@ I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConf
 
   // Enable if rx stuff has buffer was assigned and length isn't 0
   int_info->rx.en = (int_info->rx.buff && int_info->rx.len) ? I2C_ENABLE : I2C_DISABLE;
+  if (int_info->rx.en) setup_info->dma_set_buffer_cb(setup_info->rx_stream, int_info->rx.buff);
 
   // General interrupt stuff
-  int_info->address = setup_info->address;
+  int_info->circular = setup_info->circular;
+  int_info->callback = setup_info->callback;
+
+  // DMA specific stuf
   int_info->tx_stream = setup_info->tx_stream;
   int_info->rx_stream = setup_info->rx_stream;
   int_info->dma_start_transfer_cb = setup_info->dma_start_transfer_cb;
@@ -452,6 +455,7 @@ I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirec
   I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
 
+  // If TX, see if RX is there so we repeat start
   if (dir == I2C_TXRX_DIR_SEND) {
     uint8_t repeated_start = int_info->rx.en ? 1 : 0;
     end_send_data_dma(i2c_reg, dir, repeated_start);
@@ -459,6 +463,7 @@ I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirec
     if (repeated_start) i2c_start_interrupt_dma(i2c_reg);
   }
 
+  // If RX, at end of sequence
   if (dir == I2C_TXRX_DIR_RECEIVE) {
     end_send_data_dma(i2c_reg, dir, 0);
     int_info->rx.en = I2C_DISABLE;
@@ -467,6 +472,7 @@ I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirec
   uint8_t tx_en = (int_info->tx.en == I2C_ENABLE);
   uint8_t rx_en = (int_info->rx.en == I2C_ENABLE);
 
+  // Cleanup after tx/rx is done
   if (!tx_en && !rx_en) {
     int_info->status = I2C_INTERRUPT_STATUS_DONE;
     if (int_info->callback) int_info->callback();
@@ -479,18 +485,3 @@ I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirec
   }
   return int_info->status;
 }
-/*
-
-typedef struct {
-I2CInterruptBuffer_t tx;
-I2CInterruptBuffer_t rx;
-I2CInterruptStatus_t status;
-uint8_t address;
-I2CInterruptCircular_t circular;
-void (*callback)(void);
-} I2CInterruptInfo_t;
-
-static volatile I2CInterruptInfo_t i2c_interrupt_info[I2CS_NUM] = {0};
-
-
- */

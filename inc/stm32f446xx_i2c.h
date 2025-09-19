@@ -70,9 +70,12 @@ typedef struct {
   I2CBuffer_t tx;
   I2CBuffer_t rx;
   uint8_t address;
-  DMA_Stream_TypeDef tx_stream;
-  DMA_Stream_TypeDef rx_stream;
-  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef, uint16_t);
+  I2CInterruptCircular_t circular;
+  DMA_Stream_TypeDef *tx_stream;
+  DMA_Stream_TypeDef *rx_stream;
+  void (*dma_set_buffer_cb)(DMA_Stream_TypeDef *, volatile void *ptr);
+  void (*dma_start_transfer_cb)(DMA_Stream_TypeDef *, uint32_t);
+  void (*callback)(void);
 } I2CDMAConfig_t;
 
 /**
