@@ -160,17 +160,13 @@ void dma_start_transfer(DMA_Stream_TypeDef *stream, uint32_t buffer_size) {
  *
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param ptr_addr The ptr of the array to assign to the DMA stream memory reg to
- * @param addr_reg Whether mem0 or mem1
  */
-void dma_set_buffer(DMA_Stream_TypeDef *stream, volatile void *ptr_addr, DMAAddress_t addr_reg) {
+void dma_set_buffer(DMA_Stream_TypeDef *stream, volatile void *ptr_addr) {
   if (stream == NULL) return;
 
   uint8_t stream_en = (stream->CR & DMA_SxCR_EN);
-  if (stream_en) dma_stream_dis(stream);
-
-  if (addr_reg == DMA_ADDRESS_MEMORY_0) stream->M0AR = (uintptr_t)ptr_addr;
-  if (addr_reg == DMA_ADDRESS_MEMORY_1) stream->M1AR = (uintptr_t)ptr_addr;
-
+  dma_stream_dis(stream);
+  stream->M0AR = (uintptr_t)ptr_addr;
   if (stream_en) dma_stream_en(stream);
 }
 

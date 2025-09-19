@@ -14,7 +14,6 @@
 #include "stm32f446xx.h"
 
 typedef enum { DMA_IO_TYPE_PERIPHERAL = 0, DMA_IO_TYPE_MEMORY } DMAIOType_t;
-typedef enum { DMA_ADDRESS_MEMORY_0 = 0, DMA_ADDRESS_MEMORY_1 } DMAAddress_t;
 typedef enum { DMA_DATA_SIZE_8_BIT = 0, DMA_DATA_SIZE_16_BIT = 1, DMA_DATA_SIZE_32_BIT = 2 } DMADataSize_t;
 typedef enum { DMA_PRIORITY_LOW = 0, DMA_PRIORITY_MEDIUM, DMA_PRIORITY_HIGH, DMA_PRIORITY_MAX } DMAPriority_t;
 typedef enum { DMA_IO_ARR_STATIC = 0, DMA_IO_ARR_INCREMENT } DMAArrIncrement_t;
@@ -136,16 +135,14 @@ int dma_stream_init(const DMAHandle_t *dma_handle);
 void dma_start_transfer(DMA_Stream_TypeDef *stream, uint32_t buffer_size);
 
 /**
- * @brief Re-assign memory address.
+ * @brief Re-assign memory address 0.
  *
- * This function is used to assign the memory addresses in the DMA stream peripheral
- * Note: DMA stream must be disabled to re-assign memory address
+ * This function is used to assign the memory address 0 in the DMA stream peripheral
  *
  * @param stream Pointer to the DMA stream to be enabled. If NULL, the function returns immediately.
  * @param ptr The ptr of the array to assign to the DMA stream memory reg to
- * @param addr_reg Whether mem0 or mem1
  */
-void dma_set_buffer(DMA_Stream_TypeDef *stream, volatile void *ptr, DMAAddress_t addr_reg);
+void dma_set_buffer(DMA_Stream_TypeDef *stream, volatile void *ptr);
 
 /**
  * @brief Enable the DMA stream.
