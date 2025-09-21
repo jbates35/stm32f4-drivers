@@ -5,7 +5,6 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { SPI_PERI_CLOCK_DISABLE = 0, SPI_PERI_CLOCK_ENABLE } SPIPeriClockEnable_t;
 typedef enum { SPI_DEVICE_MODE_SLAVE = 0, SPI_DEVICE_MODE_MASTER } SPIDeviceMode_t;
 typedef enum {
   SPI_BUS_CONFIG_FULL_DUPLEX = 0,
@@ -91,7 +90,7 @@ typedef struct {
  * @note Ensure that the SPI instance is valid and corresponds to one of the supported
  *       SPI peripherals before calling this function.
  */
-int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIPeriClockEnable_t en_state);
+int spi_peri_clock_control(const SPI_TypeDef *spi_reg, const SPIEnable_t en_state);
 
 /**
  * @brief Initializes the SPI peripheral with the specified configuration.
