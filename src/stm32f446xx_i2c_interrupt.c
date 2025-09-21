@@ -246,11 +246,7 @@ static inline void end_send_data_dma(I2C_TypeDef *i2c_reg, I2CTxRxDirection_t di
     while (!(i2c_reg->SR1 & I2C_SR1_BTF));
   }
 
-  if (repeated_start)
-    i2c_reg->CR1 |= I2C_CR1_START;
-  else {
-    i2c_reg->CR1 |= I2C_CR1_STOP;
-  }
+  if (!repeated_start) i2c_reg->CR1 |= I2C_CR1_STOP;
 }
 
 static inline I2CIntTransferStatus_t single_byte_setup(I2C_TypeDef *i2c_reg, volatile I2CInterruptBuffer_t *rx_buff) {
@@ -429,14 +425,14 @@ I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
   I2CIntTransferStatus_t tstatus = I2C_INT_TSTATUS_OK;
 
   if (int_info->tx.en) {
-    // TX:
+    // TX logic - send address, start dma ...
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
       send_addr(i2c_reg, 0x68, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission_dma(i2c_reg, int_info, 0);
     }
   } else if (int_info->rx.en) {
-    // RX:
+    // RX logic - send address, start dma ...
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
       send_addr(i2c_reg, 0x68, 1);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
@@ -477,9 +473,12 @@ I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirec
     int_info->status = I2C_INTERRUPT_STATUS_DONE;
     if (int_info->callback) int_info->callback();
 
+    // Re-enable the tx and rx if need be - get ready for re-trigger
+    if (int_info->tx.buff && int_info->tx.len) int_info->tx.en = I2C_ENABLE;
+    if (int_info->rx.buff && int_info->rx.len) int_info->rx.en = I2C_ENABLE;
+
+    // If circular, we can go ahead and start the next transaction
     if (int_info->circular == I2C_INTERRUPT_CIRCULAR) {
-      if (int_info->tx.buff && int_info->tx.len) int_info->tx.en = I2C_ENABLE;
-      if (int_info->rx.buff && int_info->rx.len) int_info->rx.en = I2C_ENABLE;
       i2c_start_interrupt_dma(i2c_reg);
     }
   }
