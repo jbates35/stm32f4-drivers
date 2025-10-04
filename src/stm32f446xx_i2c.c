@@ -74,6 +74,14 @@ static inline uint16_t get_i2c_ccr_ccr_val(I2CSclMode_t scl_mode, I2CFMDutyCycle
   return ccr_val;
 }
 
+/**
+ * @brief Turn the I2C peripheral clock on or off
+ *
+ * @param i2c_reg Base address of the I2C peripheral
+ * @param en Enable or disable
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t en) {
   // Get the index of the I2C reg in the array defined at top
   int index = get_i2c_index(i2c_reg);
@@ -90,6 +98,14 @@ I2CStatus_t i2c_peri_clock_control(const I2C_TypeDef *i2c_reg, const I2CEnable_t
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Initializes the i2c peripheral with the configuration struct in the i2c handle
+ *
+ * @param i2c_handle Handle containing the base address of the i2c perpiheral, plus the configuration struct
+ *
+ * @return I2CStatus_t Return status of the function
+
+ */
 I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   I2C_TypeDef *addr = i2c_handle->addr;
 
@@ -167,6 +183,13 @@ I2CStatus_t i2c_init(I2CHandle_t *i2c_handle) {
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Deinitializes the specified I2C peripheral by resetting its registers
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -182,6 +205,13 @@ I2CStatus_t i2c_deinit(const I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Enables the specified I2C peripheral
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 I2CStatus_t i2c_enable(I2C_TypeDef *i2c_reg) {
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -190,12 +220,27 @@ I2CStatus_t i2c_enable(I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Generates a START condition and waits for it to be set (blocking)
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address
+ * @param ack_en  Enable or disable ACK after address phase
+ */
 static inline void i2c_start_blocking(I2C_TypeDef *i2c_reg, I2CEnable_t ack_en) {
   // Initiate transfer with start byte
   i2c_reg->CR1 |= (ack_en << I2C_CR1_ACK_Pos) | (1 << I2C_CR1_START_Pos);
   while (!(i2c_reg->SR1 & (1 << I2C_SR1_SB_Pos)));
 }
 
+/**
+ * @brief Sends the slave address on the I2C bus and waits for address phase completion (blocking)
+ *
+ * @param i2c_reg    Pointer to the I2C peripheral base address
+ * @param slave_addr 7-bit slave address
+ * @param wr         Write or Read operation (I2C_WRITE/I2C_READ)
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 static inline I2CStatus_t i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t slave_addr, const I2CWriteOrRead_t wr) {
   // Load the slave address into the I2C data register
   // NOTE: if reading, a 1 should be set to LSB
@@ -216,6 +261,17 @@ static inline I2CStatus_t i2c_send_addr_blocking(I2C_TypeDef *i2c_reg, uint8_t s
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Sends data as I2C master to a slave device (blocking)
+ *
+ * @param i2c_reg     Pointer to the I2C peripheral base address
+ * @param tx_buffer   Pointer to the data buffer to send
+ * @param len         Number of bytes to send
+ * @param slave_addr  7-bit slave address
+ * @param stop_at_end Whether to send STOP condition at the end (I2C_STOP/I2C_NO_STOP)
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, uint8_t slave_addr,
                             I2CStop_t stop_at_end) {
   int index = get_i2c_index(i2c_reg);
@@ -250,6 +306,16 @@ I2CStatus_t i2c_master_send(I2C_TypeDef *i2c_reg, void *tx_buffer, int32_t len, 
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Receives data as I2C master from a slave device (blocking)
+ *
+ * @param i2c_reg    Pointer to the I2C peripheral base address
+ * @param rx_buffer  Pointer to the buffer to store received data
+ * @param len        Number of bytes to receive
+ * @param slave_addr 7-bit slave address
+ *
+ * @return I2CStatus_t Return status of the function
+ */
 I2CStatus_t i2c_master_receive(I2C_TypeDef *i2c_reg, void *rx_buffer, int32_t len, uint8_t slave_addr) {
   int index = get_i2c_index(i2c_reg);
   if (index < 0) return I2C_STATUS_I2C_ADDR_INVALID;

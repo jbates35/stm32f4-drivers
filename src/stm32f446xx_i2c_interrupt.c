@@ -81,6 +81,16 @@ static inline void clear_i2c_info(volatile I2CInterruptInfo_t *int_info) {
   int_info->circular = 0;
 }
 
+/**
+ * @brief Sets up the interrupt configuration for an I2C peripheral.
+ *
+ * Initializes the interrupt info structure for the given I2C peripheral with the provided
+ * transmit and receive buffer information, address, circular mode, and callback.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @param setup_info Pointer to the I2CInterruptConfig_t structure containing setup parameters.
+ * @return I2CStatus_t Status of the setup operation.
+ */
 I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t *setup_info) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -114,7 +124,16 @@ I2CStatus_t i2c_setup_interrupt(I2C_TypeDef *i2c_reg, const I2CInterruptConfig_t
 
   return I2C_STATUS_OK;
 }
+// Enable if rx stuff has buffer was assigned and length isn't 0
 
+/**
+ * @brief Determines the current I2C event interrupt type.
+ *
+ * Checks the I2C status registers to identify the current event (start, address sent, RXNE, TXE, BTF).
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CIRQType_t The identified IRQ event type.
+ */
 I2CIRQType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_SB)) return I2C_IRQ_TYPE_STARTED;
   if (get_status(i2c_reg, I2C_SR1_ADDR)) return I2C_IRQ_TYPE_ADDR_SENT;
@@ -125,6 +144,15 @@ I2CIRQType_t i2c_irq_event_handling(const I2C_TypeDef *i2c_reg) {
   return I2C_IRQ_TYPE_NONE;
 }
 
+/**
+ * @brief Handles I2C error interrupts and clears error flags.
+ *
+ * Checks for arbitration lost, bus error, acknowledge failure, timeout, and overrun errors.
+ * Clears the corresponding error flag and returns the error type.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CIRQType_t The identified IRQ error type, or NONE if no error.
+ */
 I2CIRQType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
   if (get_status(i2c_reg, I2C_SR1_ARLO)) {
     clear_flag(i2c_reg, I2C_SR1_ARLO);
@@ -154,6 +182,14 @@ I2CIRQType_t i2c_irq_error_handling(I2C_TypeDef *i2c_reg) {
   return I2C_IRQ_TYPE_NONE;
 }
 
+/**
+ * @brief Starts an I2C interrupt-driven transaction.
+ *
+ * Sets the interrupt info status to busy and generates a START condition.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CStatus_t Status of the start operation.
+ */
 I2CStatus_t i2c_start_interrupt(I2C_TypeDef *i2c_reg) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -295,6 +331,15 @@ static inline I2CIntTransferStatus_t receive_data(I2C_TypeDef *i2c_reg, volatile
   return I2C_INT_TSTATUS_OK;
 }
 
+/**
+ * @brief Handles I2C word-level interrupt events for transmit and receive.
+ *
+ * Processes TX and RX events based on the current IRQ reason, manages buffer state,
+ * and invokes the callback when the transaction is complete or circular mode is enabled.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CInterruptStatus_t The current status of the interrupt transaction.
+ */
 I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
   I2CIRQType_t irq_reason = i2c_irq_event_handling(i2c_reg);
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
@@ -353,6 +398,14 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef *i2c_reg) {
   return int_info->status;
 }
 
+/**
+ * @brief Resets the interrupt info structure for the specified I2C peripheral.
+ *
+ * Resets the TX and RX buffer state and sets the interrupt status to ready.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CStatus_t Status of the reset operation.
+ */
 I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -370,6 +423,14 @@ I2CStatus_t i2c_reset_interrupt(const I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Starts an I2C DMA interrupt-driven transaction.
+ *
+ * Sets the interrupt info status to busy and generates a START condition for DMA-based transfers.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CStatus_t Status of the start operation.
+ */
 I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -381,6 +442,16 @@ I2CStatus_t i2c_start_interrupt_dma(I2C_TypeDef *i2c_reg) {
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Sets up the DMA interrupt configuration for an I2C peripheral.
+ *
+ * Initializes the interrupt info structure for the given I2C peripheral with the provided
+ * DMA transmit and receive buffer information, circular mode, callback, and DMA streams.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @param setup_info Pointer to the I2CDMAConfig_t structure containing DMA setup parameters.
+ * @return I2CStatus_t Status of the setup operation.
+ */
 I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConfig_t *setup_info) {
   volatile I2CInterruptInfo_t *int_info = get_i2c_int_info(i2c_reg);
   if (int_info == NULL) return I2C_STATUS_I2C_ADDR_INVALID;
@@ -416,6 +487,14 @@ I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef *i2c_reg, const I2CDMAConf
   return I2C_STATUS_OK;
 }
 
+/**
+ * @brief Handles the start phase of an I2C DMA interrupt transaction.
+ *
+ * Sends the slave address and initializes DMA transfer for TX or RX, depending on the buffer state.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @return I2CInterruptStatus_t The current status of the interrupt transaction.
+ */
 I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
   if (!is_i2c_instance(i2c_reg)) return I2C_INTERRUPT_STATUS_INVALID_ADDR;
 
@@ -445,6 +524,16 @@ I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef *i2c_reg) {
   return int_info->status;
 }
 
+/**
+ * @brief Handles the end phase of an I2C DMA interrupt transaction.
+ *
+ * Finalizes the DMA transfer for TX or RX, manages repeated start if needed, and invokes the callback
+ * when the transaction is complete or circular mode is enabled.
+ *
+ * @param i2c_reg Pointer to the I2C peripheral base address.
+ * @param dir Direction of the transfer (I2C_TXRX_DIR_SEND or I2C_TXRX_DIR_RECEIVE).
+ * @return I2CInterruptStatus_t The current status of the interrupt transaction.
+ */
 I2CInterruptStatus_t i2c_dma_irq_handling_end(I2C_TypeDef *i2c_reg, I2CTxRxDirection_t dir) {
   if (!is_i2c_instance(i2c_reg)) return I2C_INTERRUPT_STATUS_INVALID_ADDR;
 
