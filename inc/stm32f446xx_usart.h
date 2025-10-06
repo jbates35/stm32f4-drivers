@@ -7,7 +7,8 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { USART_MODE_UART = 0, USART_MODE_USART } USARTMode_t;
+typedef enum { USART_STATUS_OK = 0, USART_STATUS_INVALID_ADDR = -1 } USARTStatus_t;
+typedef enum { USART_MODE_UART, USART_MODE_USART } USARTMode_t;
 typedef enum {
   USART_BAUD_RATE_150 = 150,
   USART_BAUD_RATE_300 = 300,
@@ -23,30 +24,36 @@ typedef enum {
   USART_BAUD_RATE_460800 = 460800,
   USART_BAUD_RATE_921600 = 921600
 } USARTBaudRate_t;
-typedef enum { USART_STOP_BIT_ZERO = 0, USART_STOP_BIT_ONE, USART_STOP_BIT_TWO } USARTStopBitCount_t;
-typedef enum { asdf } USARTWordLength_t;
+typedef enum { USART_STOPS_BIT_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
+typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USARTWordLength_t;
+typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARTY_ODD } USARTPartityType_t;
+typedef enum { not_sure_yet } USARTHWFlowControl_t;
+typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 
 typedef struct {
   uint32_t peri_clock_freq_hz;
   USARTMode_t mode;
   USARTBaudRate_t baud_rate;
   USARTStopBitCount_t stop_bit_count;
-  uint8_t word_length;
-  uint8_t parity_type;
-  uint8_t hw_flow_control;
+  USARTWordLength_t word_length;
+  USARTPartityType_t parity_type;
+  USARTHWFlowControl_t hw_flow_control;
+  USARTEnable_t en_on_start;
 } USARTConfig_t;
-typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 
 typedef struct {
-  int asdf2;
+  USART_TypeDef addr;
+  USARTConfig_t cfg;
 } USARTHandle_t;
 
-int usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state);
-int usart_init(const USARTHandle_t *usart_handle, const USARTEnable_t en_state);
-int usart_deinit(const USART_TypeDef *usart_reg);
-int usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff);
+USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state);
+USARTStatus_t usart_init(const USARTHandle_t *usart_handle, const USARTEnable_t en_state);
+USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
+USARTStatus_t usart_enable(const USART_TypeDef *usart_reg);
+USARTStatus_t usart_disable(const USART_TypeDef *usart_reg);
+USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff);
 uint16_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
-int usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
-int usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len);
+USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
+USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len);
 
 #endif
