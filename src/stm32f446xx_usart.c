@@ -43,10 +43,44 @@ USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USA
   else
     *usart_reg_arr[index] |= (1 << usart_rcc_pos[index]);
 
-  return USART_STATUS_OK;  // Get the index of the I2C reg in the array defined at top
+  return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_init(const USARTHandle_t *usart_handle, const USARTEnable_t en_state) { return USART_STATUS_OK; }
+USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
+  USART_TypeDef *addr = usart_handle->addr;
+
+  int index = get_usart_index(addr);
+  if (index < 0) return USART_STATUS_INVALID_ADDR;
+
+  USARTConfig_t *cfg = &usart_handle->cfg;
+
+  uint8_t freq_mhz = cfg->peri_clock_freq_hz / (int)1E6;
+  // if (freq_mhz < 2 || freq_mhz > 50) return I2C_STATUS_INVALID_PERI_FREQUENCY;
+
+  uint32_t cr1_word, cr2_word, cr3_word = 0;
+
+  // Select word length - 8 data + n stop, or 9 data + n stop
+  uint8_t word_length = (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) ? 1 : 0;
+  cr1_word |= (word_length << USART_CR1_M_Pos);
+
+  if (cfg->parity_type == USART_PARITY_ODD) {
+    cr1_word |= (USART_CR1_PCE | USART_CR1_PS);
+  } else if (cfg->parity_type == USART_PARITY_EVEN) {
+    cr1_word |= USART_CR1_PCE;
+  }
+
+  uint8_t mode = (cfg->mode == USART_MODE_USART) ? 1 : 0;
+  cr2_word |= (mode << USART_CR2_CLKEN_Pos);
+
+  uint8_t stop_bit_count = (cfg->stop_bit_count == USART_STOP_BITS_TWO) ? 2 : 0;
+  cr2_word |= (stop_bit_count << USART_CR2_STOP_Pos);
+
+  addr->CR1 = cr1_word;
+  addr->CR2 = cr2_word;
+  addr->CR3 = cr3_word;
+
+  return USART_STATUS_OK;
+}
 USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
 USARTStatus_t usart_enable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
 USARTStatus_t usart_disable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
