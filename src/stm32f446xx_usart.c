@@ -52,32 +52,28 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   int index = get_usart_index(addr);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
 
-  USARTConfig_t *cfg = &usart_handle->cfg;
+  const USARTConfig_t *cfg = &usart_handle->cfg;
 
   uint8_t freq_mhz = cfg->peri_clock_freq_hz / (int)1E6;
   // if (freq_mhz < 2 || freq_mhz > 50) return I2C_STATUS_INVALID_PERI_FREQUENCY;
 
-  uint32_t cr1_word, cr2_word, cr3_word = 0;
+  uint32_t cr1_word = 0, cr2_word = 0, cr3_word = 0;
 
   // Select word length - 8 data + n stop, or 9 data + n stop
-  uint8_t word_length = (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) ? 1 : 0;
-  cr1_word |= (word_length << USART_CR1_M_Pos);
+  if (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) cr1_word |= USART_CR1_M;
+  if (cfg->en_on_start == USART_ENABLE) cr1_word |= USART_CR1_UE;
 
-  if (cfg->parity_type == USART_PARITY_ODD) {
+  if (cfg->parity_type == USART_PARITY_ODD)
     cr1_word |= (USART_CR1_PCE | USART_CR1_PS);
-  } else if (cfg->parity_type == USART_PARITY_EVEN) {
+  else if (cfg->parity_type == USART_PARITY_EVEN)
     cr1_word |= USART_CR1_PCE;
-  }
 
-  uint8_t mode = (cfg->mode == USART_MODE_USART) ? 1 : 0;
-  cr2_word |= (mode << USART_CR2_CLKEN_Pos);
+  if (cfg->mode == USART_MODE_USART) cr2_word |= USART_CR2_CLKEN;
+  if (cfg->stop_bit_count == USART_STOP_BITS_TWO) cr2_word |= USART_CR2_STOP_1;
 
-  uint8_t stop_bit_count = (cfg->stop_bit_count == USART_STOP_BITS_TWO) ? 2 : 0;
-  cr2_word |= (stop_bit_count << USART_CR2_STOP_Pos);
-
-  addr->CR1 = cr1_word;
-  addr->CR2 = cr2_word;
   addr->CR3 = cr3_word;
+  addr->CR2 = cr2_word;
+  addr->CR1 = cr1_word;
 
   return USART_STATUS_OK;
 }
