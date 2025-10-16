@@ -24,9 +24,9 @@ typedef enum {
   USART_BAUD_RATE_460800 = 460800,
   USART_BAUD_RATE_921600 = 921600
 } USARTBaudRate_t;
-typedef enum { USART_STOPS_BIT_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
+typedef enum { USART_STOP_BITS_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
 typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USARTWordLength_t;
-typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARTY_ODD } USARTPartityType_t;
+typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD } USARTPartityType_t;
 typedef enum { not_sure_yet } USARTHWFlowControl_t;
 typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 
@@ -42,12 +42,12 @@ typedef struct {
 } USARTConfig_t;
 
 typedef struct {
-  USART_TypeDef addr;
+  USART_TypeDef *addr;
   USARTConfig_t cfg;
 } USARTHandle_t;
 
 USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state);
-USARTStatus_t usart_init(const USARTHandle_t *usart_handle, const USARTEnable_t en_state);
+USARTStatus_t usart_init(const USARTHandle_t *usart_handle);
 USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_enable(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_disable(const USART_TypeDef *usart_reg);
