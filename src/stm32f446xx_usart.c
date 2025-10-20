@@ -55,7 +55,6 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   const USARTConfig_t *cfg = &usart_handle->cfg;
 
   uint8_t freq_mhz = cfg->peri_clock_freq_hz / (int)1E6;
-  // if (freq_mhz < 2 || freq_mhz > 50) return I2C_STATUS_INVALID_PERI_FREQUENCY;
 
   uint32_t cr1_word = 0, cr2_word = 0, cr3_word = 0, brr_word = 0;
 
@@ -89,6 +88,10 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   // Stop bit count
   if (cfg->stop_bit_count == USART_STOP_BITS_TWO) cr2_word |= USART_CR2_STOP_1;
 
+  // Flow control
+  if (cfg->hw_flow_control == USART_HW_FLOW_CTS) cr3_word |= USART_CR3_CTSE;
+  if (cfg->hw_flow_control == USART_HW_FLOW_RTS) cr3_word |= USART_CR3_RTSE;
+
   addr->CR3 = cr3_word;
   addr->CR2 = cr2_word;
   addr->CR1 = cr1_word;
@@ -96,7 +99,22 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
 
   return USART_STATUS_OK;
 }
-USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
+
+USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) {
+  int index = get_usart_index(usart_reg);
+  if (index < 0) return USART_STATUS_INVALID_ADDR;
+
+  volatile uint32_t *usart_rstr_arr[] = USART_RSTR_REGS;
+  const unsigned int usart_rcc_pos[] = USART_RCC_POS;
+
+  *usart_rstr_arr[index] |= (1 << usart_rcc_pos[index]);
+  __NOP();
+  __NOP();
+  *usart_rstr_arr[index] &= ~(1 << usart_rcc_pos[index]);
+
+  return USART_STATUS_OK;
+}
+
 USARTStatus_t usart_enable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
 USARTStatus_t usart_disable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
 USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff) { return USART_STATUS_OK; }

@@ -28,7 +28,7 @@ typedef enum { USART_STOP_BITS_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
 typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USARTWordLength_t;
 typedef enum { USART_ASYNCHRONOUS, USART_SYNCHRONOUS } USARTSynchronous_t;
 typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD } USARTPartityType_t;
-typedef enum { not_sure_yet } USARTHWFlowControl_t;
+typedef enum { USART_HW_FLOW_NONE, USART_HW_FLOW_CTS, USART_HW_FLOW_RTS } USARTHWFlowControl_t;
 typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 
 typedef struct {
