@@ -57,7 +57,17 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   uint8_t freq_mhz = cfg->peri_clock_freq_hz / (int)1E6;
   // if (freq_mhz < 2 || freq_mhz > 50) return I2C_STATUS_INVALID_PERI_FREQUENCY;
 
-  uint32_t cr1_word = 0, cr2_word = 0, cr3_word = 0;
+  uint32_t cr1_word = 0, cr2_word = 0, cr3_word = 0, brr_word = 0;
+
+  // baud rate calculation
+  // BR = Fck / ( 8 * (2 - OVER8) * USARTDIV)
+  // Therefore, USARTDIV = Fck / ( 8 * (2 - OVER8) * BR)
+  uint32_t freq = cfg->peri_clock_freq_hz;
+  uint32_t divisor = 16 * cfg->baud_rate;
+  uint32_t usart_div = freq / divisor;
+  uint32_t remainder = freq % divisor;
+  uint32_t usart_frac = 16 * remainder / divisor;
+  brr_word = (usart_div << 4) | (usart_frac & 0xF);
 
   // Select word length - 8 data + n stop, or 9 data + n stop
   if (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) cr1_word |= USART_CR1_M;
@@ -68,12 +78,13 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   else if (cfg->parity_type == USART_PARITY_EVEN)
     cr1_word |= USART_CR1_PCE;
 
-  if (cfg->mode == USART_MODE_USART) cr2_word |= USART_CR2_CLKEN;
+  if (cfg->synchronous == USART_SYNCHRONOUS) cr2_word |= USART_CR2_CLKEN;
   if (cfg->stop_bit_count == USART_STOP_BITS_TWO) cr2_word |= USART_CR2_STOP_1;
 
   addr->CR3 = cr3_word;
   addr->CR2 = cr2_word;
   addr->CR1 = cr1_word;
+  addr->BRR = brr_word;
 
   return USART_STATUS_OK;
 }

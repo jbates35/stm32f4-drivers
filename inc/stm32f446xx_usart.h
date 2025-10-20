@@ -8,7 +8,7 @@
 #include "stm32f446xx.h"
 
 typedef enum { USART_STATUS_OK = 0, USART_STATUS_INVALID_ADDR = -1 } USARTStatus_t;
-typedef enum { USART_MODE_UART, USART_MODE_USART } USARTMode_t;
+typedef enum { USART_MODE_TX_ONLY, USART_MODE_RX_ONLY, USART_MODE_BIDIRECTIONAL } USARTMode_t;
 typedef enum {
   USART_BAUD_RATE_150 = 150,
   USART_BAUD_RATE_300 = 300,
@@ -26,6 +26,7 @@ typedef enum {
 } USARTBaudRate_t;
 typedef enum { USART_STOP_BITS_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
 typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USARTWordLength_t;
+typedef enum { USART_ASYNCHRONOUS, USART_SYNCHRONOUS } USARTSynchronous_t;
 typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD } USARTPartityType_t;
 typedef enum { not_sure_yet } USARTHWFlowControl_t;
 typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
@@ -37,6 +38,7 @@ typedef struct {
   USARTStopBitCount_t stop_bit_count;
   USARTWordLength_t word_length;
   USARTPartityType_t parity_type;
+  USARTSynchronous_t synchronous;
   USARTHWFlowControl_t hw_flow_control;
   USARTEnable_t en_on_start;
 } USARTConfig_t;
