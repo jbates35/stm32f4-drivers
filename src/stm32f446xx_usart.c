@@ -73,12 +73,20 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   if (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) cr1_word |= USART_CR1_M;
   if (cfg->en_on_start == USART_ENABLE) cr1_word |= USART_CR1_UE;
 
+  // Parity bits
   if (cfg->parity_type == USART_PARITY_ODD)
     cr1_word |= (USART_CR1_PCE | USART_CR1_PS);
   else if (cfg->parity_type == USART_PARITY_EVEN)
     cr1_word |= USART_CR1_PCE;
 
+  // Directionality
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_TX_ONLY) cr1_word |= USART_CR1_TE;
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_RX_ONLY) cr1_word |= USART_CR1_RE;
+
+  // Synchronous mode
   if (cfg->synchronous == USART_SYNCHRONOUS) cr2_word |= USART_CR2_CLKEN;
+
+  // Stop bit count
   if (cfg->stop_bit_count == USART_STOP_BITS_TWO) cr2_word |= USART_CR2_STOP_1;
 
   addr->CR3 = cr3_word;
