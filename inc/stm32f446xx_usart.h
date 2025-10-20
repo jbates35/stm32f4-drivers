@@ -51,8 +51,8 @@ typedef struct {
 USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state);
 USARTStatus_t usart_init(const USARTHandle_t *usart_handle);
 USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
-USARTStatus_t usart_enable(const USART_TypeDef *usart_reg);
-USARTStatus_t usart_disable(const USART_TypeDef *usart_reg);
+USARTStatus_t usart_enable(USART_TypeDef *usart_reg);
+USARTStatus_t usart_disable(USART_TypeDef *usart_reg);
 USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff);
 uint16_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);

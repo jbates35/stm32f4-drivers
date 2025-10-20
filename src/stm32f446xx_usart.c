@@ -26,7 +26,7 @@ static inline uint8_t get_status(const USART_TypeDef *usart_reg, const uint32_t 
   return 0;
 }
 
-static inline int is_i2c_instance(const USART_TypeDef *usart_reg) {
+static inline int is_usart_instance(const USART_TypeDef *usart_reg) {
   return (usart_reg == USART1 || usart_reg == USART2 || usart_reg == USART3 || usart_reg == UART4 ||
           usart_reg == UART5 || usart_reg == USART6);
 }
@@ -115,8 +115,18 @@ USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) {
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_enable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
-USARTStatus_t usart_disable(const USART_TypeDef *usart_reg) { return USART_STATUS_OK; }
+USARTStatus_t usart_enable(USART_TypeDef *usart_reg) {
+  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
+  usart_reg->CR1 |= USART_CR1_UE;
+  return USART_STATUS_OK;
+}
+
+USARTStatus_t usart_disable(USART_TypeDef *usart_reg) {
+  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
+  usart_reg->CR1 &= ~USART_CR1_UE;
+  return USART_STATUS_OK;
+}
+
 USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff) { return USART_STATUS_OK; }
 uint16_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg) { return 0; }
 USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len) {
