@@ -2,6 +2,8 @@
 #ifndef INC_STM34F446XX_USART_H_
 #define INC_STM34F446XX_USART_H_
 
+// TODO: Remove 9 bit data mode, but enable it when parity is used
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -53,8 +55,8 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle);
 USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_enable(USART_TypeDef *usart_reg);
 USARTStatus_t usart_disable(USART_TypeDef *usart_reg);
-USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff);
-uint16_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
+USARTStatus_t usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte);
+uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
 USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len);
 

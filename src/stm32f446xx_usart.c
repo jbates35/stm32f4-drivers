@@ -127,8 +127,24 @@ USARTStatus_t usart_disable(USART_TypeDef *usart_reg) {
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_tx_byte_blocking(const USART_TypeDef *usart_reg, uint16_t tx_buff) { return USART_STATUS_OK; }
-uint16_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg) { return 0; }
+USARTStatus_t usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte) {
+  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
+
+  // While the TX Buffer is not empty...
+  while (!get_status(usart_reg, USART_SR_TXE));
+  usart_reg->DR = tx_byte;
+
+  return USART_STATUS_OK;
+}
+
+uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg) {
+  if (!is_usart_instance(usart_reg)) return 0j;
+
+  // While the TX Buffer is not empty...
+  while (!get_status(usart_reg, USART_SR_RXNE));
+  return (uint8_t)usart_reg->DR;
+}
+
 USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len) {
   return USART_STATUS_OK;
 }
