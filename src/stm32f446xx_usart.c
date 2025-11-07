@@ -68,8 +68,10 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   uint32_t usart_frac = 16 * remainder / divisor;
   brr_word = (usart_div << 4) | (usart_frac & 0xF);
 
-  // Select word length - 8 data + n stop, or 9 data + n stop
-  if (cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA) cr1_word |= USART_CR1_M;
+  // Select word length - 8 data + n stop, or 9 data + n stop (only if parity is selected)
+  if (cfg->parity_type != USART_PARITY_NONE && cfg->word_length == USART_WORD_LENGTH_9_BIT_DATA)
+    cr1_word |= USART_CR1_M;
+
   if (cfg->en_on_start == USART_ENABLE) cr1_word |= USART_CR1_UE;
 
   // Parity bits
@@ -127,27 +129,42 @@ USARTStatus_t usart_disable(USART_TypeDef *usart_reg) {
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte) {
-  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
-
+void usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte) {
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_TXE));
   usart_reg->DR = tx_byte;
-
-  return USART_STATUS_OK;
 }
 
 uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg) {
-  if (!is_usart_instance(usart_reg)) return 0j;
-
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_RXNE));
   return (uint8_t)usart_reg->DR;
 }
 
-USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len) {
+USARTStatus_t usart_tx_word_blocking(USART_TypeDef *usart_reg, void *tx_buff, uint16_t len) {
+  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
+
+  for (int i = 0; i < len; i++) {
+    uint8_t data = ((uint8_t *)tx_buff)[i] & 0xFF;
+    usart_tx_byte_blocking(usart_reg, data);
+  }
+
   return USART_STATUS_OK;
 }
+
 USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len) {
+  if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
+
+  uint8_t parity = (usart_reg->CR1 & USART_CR1_PCE);
+  uint8_t data_nine_bits = (usart_reg->CR1 & USART_CR1_M);
+
+  uint8_t mask = 0xFF;
+  if (!parity && !data_nine_bits) mask = 0x7F;
+
+  for (int i = 0; i < len; i++) {
+    uint16_t data = usart_rx_byte_blocking(usart_reg);
+    ((uint8_t *)rx_buff)[i] = data & mask;
+  }
+
   return USART_STATUS_OK;
 }

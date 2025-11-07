@@ -55,9 +55,9 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle);
 USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
 USARTStatus_t usart_enable(USART_TypeDef *usart_reg);
 USARTStatus_t usart_disable(USART_TypeDef *usart_reg);
-USARTStatus_t usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte);
+void usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte);
 uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
-USARTStatus_t usart_tx_word_blocking(const USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
+USARTStatus_t usart_tx_word_blocking(USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
 USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len);
 
 #endif
