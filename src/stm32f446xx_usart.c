@@ -9,8 +9,8 @@
 #define SIZEOF(arr) ((int)sizeof(arr) / sizeof(arr[0]))
 #define SIZEOFP(arr) ((int)sizeof(arr) / sizeof(uint32_t))  // Memory size of stm32f4
 
-static inline int get_usart_index(const USART_TypeDef *addr) {
-  const volatile USART_TypeDef *usart_addrs[] = USARTS;
+static inline int get_usart_index(const USART_TypeDef* addr) {
+  const volatile USART_TypeDef* usart_addrs[] = USARTS;
   int usart_index = -1;
   for (int i = 0; i < SIZEOFP(usart_addrs); i++) {
     if (addr == usart_addrs[i]) {
@@ -21,21 +21,21 @@ static inline int get_usart_index(const USART_TypeDef *addr) {
   return usart_index;
 }
 
-static inline uint8_t get_status(const USART_TypeDef *usart_reg, const uint32_t mask) {
+static inline uint8_t get_status(const USART_TypeDef* usart_reg, const uint32_t mask) {
   if (usart_reg->SR & mask) return 1;
   return 0;
 }
 
-static inline int is_usart_instance(const USART_TypeDef *usart_reg) {
+static inline int is_usart_instance(const USART_TypeDef* usart_reg) {
   return (usart_reg == USART1 || usart_reg == USART2 || usart_reg == USART3 || usart_reg == UART4 ||
           usart_reg == UART5 || usart_reg == USART6);
 }
 
-USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state) {
+USARTStatus_t usart_peri_clock_control(const USART_TypeDef* usart_reg, const USARTEnable_t en_state) {
   int index = get_usart_index(usart_reg);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
 
-  volatile uint32_t *usart_reg_arr[] = USART_RCC_REGS;
+  volatile uint32_t* usart_reg_arr[] = USART_RCC_REGS;
   const unsigned int usart_rcc_pos[] = USART_RCC_POS;
 
   if (en_state == USART_DISABLE)
@@ -46,15 +46,13 @@ USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USA
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
-  USART_TypeDef *addr = usart_handle->addr;
+USARTStatus_t usart_init(const USARTHandle_t* usart_handle) {
+  USART_TypeDef* addr = usart_handle->addr;
 
   int index = get_usart_index(addr);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
 
-  const USARTConfig_t *cfg = &usart_handle->cfg;
-
-  uint8_t freq_mhz = cfg->peri_clock_freq_hz / (int)1E6;
+  const USARTConfig_t* cfg = &usart_handle->cfg;
 
   uint32_t cr1_word = 0, cr2_word = 0, cr3_word = 0, brr_word = 0;
 
@@ -81,8 +79,14 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
     cr1_word |= USART_CR1_PCE;
 
   // Directionality
-  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_TX_ONLY) cr1_word |= USART_CR1_TE;
-  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_RX_ONLY) cr1_word |= USART_CR1_RE;
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_TX_ONLY) {
+    cr1_word |= USART_CR1_TE;
+    if (cfg->interrupt_en == USART_ENABLE) cr1_word |= USART_CR1_TXEIE;
+  }
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_RX_ONLY) {
+    cr1_word |= USART_CR1_RE;
+    if (cfg->interrupt_en == USART_ENABLE) cr1_word |= USART_CR1_RXNEIE;
+  }
 
   // Synchronous mode
   if (cfg->synchronous == USART_SYNCHRONOUS) cr2_word |= USART_CR2_CLKEN;
@@ -102,11 +106,11 @@ USARTStatus_t usart_init(const USARTHandle_t *usart_handle) {
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) {
+USARTStatus_t usart_deinit(const USART_TypeDef* usart_reg) {
   int index = get_usart_index(usart_reg);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
 
-  volatile uint32_t *usart_rstr_arr[] = USART_RSTR_REGS;
+  volatile uint32_t* usart_rstr_arr[] = USART_RSTR_REGS;
   const unsigned int usart_rcc_pos[] = USART_RCC_POS;
 
   *usart_rstr_arr[index] |= (1 << usart_rcc_pos[index]);
@@ -117,42 +121,42 @@ USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg) {
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_enable(USART_TypeDef *usart_reg) {
+USARTStatus_t usart_enable(USART_TypeDef* usart_reg) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
   usart_reg->CR1 |= USART_CR1_UE;
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_disable(USART_TypeDef *usart_reg) {
+USARTStatus_t usart_disable(USART_TypeDef* usart_reg) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
   usart_reg->CR1 &= ~USART_CR1_UE;
   return USART_STATUS_OK;
 }
 
-void usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte) {
+void usart_tx_byte_blocking(USART_TypeDef* usart_reg, uint8_t tx_byte) {
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_TXE));
   usart_reg->DR = tx_byte;
 }
 
-uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg) {
+uint8_t usart_rx_byte_blocking(const USART_TypeDef* usart_reg) {
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_RXNE));
   return (uint8_t)usart_reg->DR;
 }
 
-USARTStatus_t usart_tx_word_blocking(USART_TypeDef *usart_reg, void *tx_buff, uint16_t len) {
+USARTStatus_t usart_tx_word_blocking(USART_TypeDef* usart_reg, void* tx_buff, uint16_t len) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
 
   for (int i = 0; i < len; i++) {
-    uint8_t data = ((uint8_t *)tx_buff)[i] & 0xFF;
+    uint8_t data = ((uint8_t*)tx_buff)[i] & 0xFF;
     usart_tx_byte_blocking(usart_reg, data);
   }
 
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len) {
+USARTStatus_t usart_rx_word_blocking(const USART_TypeDef* usart_reg, void* rx_buff, uint16_t len) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
 
   uint8_t parity = (usart_reg->CR1 & USART_CR1_PCE);
@@ -163,7 +167,7 @@ USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_bu
 
   for (int i = 0; i < len; i++) {
     uint16_t data = usart_rx_byte_blocking(usart_reg);
-    ((uint8_t *)rx_buff)[i] = data & mask;
+    ((uint8_t*)rx_buff)[i] = data & mask;
   }
 
   return USART_STATUS_OK;

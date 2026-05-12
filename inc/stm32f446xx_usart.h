@@ -26,12 +26,52 @@ typedef enum {
   USART_BAUD_RATE_460800 = 460800,
   USART_BAUD_RATE_921600 = 921600
 } USARTBaudRate_t;
+typedef enum {
+  USART_IRQ_TYPE_NONE,
+  USART_IRQ_TYPE_TXE,
+  USART_IRQ_TYPE_RXNE,
+  USART_IRQ_TYPE_TRANSMISSION_COMPLETE,
+  USART_IRQ_TYPE_IDLE,
+  USART_IRQ_TYPE_LINE_BREAK_DETECTED,
+  USART_IRQ_TYPE_OVERRUN_ERROR,
+  USART_IRQ_TYPE_NOISE_DETECTED,
+  USART_IRQ_TYPE_FRAMING_ERROR,
+  USART_IRQ_TYPE_PARITY_ERROR
+} USARTIRQType_t;
+typedef enum {
+  USART_INTERRUPT_STATUS_READY = 0,
+  USART_INTERRUPT_STATUS_BUSY,
+  USART_INTERRUPT_STATUS_DONE,
+  USART_INTERRUPT_STATUS_WAITING,
+  USART_INTERRUPT_STATUS_ERROR,
+  USART_INTERRUPT_STATUS_INVALID_ADDR
+} USARTInterruptStatus_t;
 typedef enum { USART_STOP_BITS_ONE, USART_STOP_BITS_TWO } USARTStopBitCount_t;
 typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USARTWordLength_t;
 typedef enum { USART_ASYNCHRONOUS, USART_SYNCHRONOUS } USARTSynchronous_t;
 typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD } USARTPartityType_t;
 typedef enum { USART_HW_FLOW_NONE, USART_HW_FLOW_CTS, USART_HW_FLOW_RTS } USARTHWFlowControl_t;
 typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
+typedef enum { USART_INTERRUPT_CIRCULAR, USART_INTERRUPT_NON_CIRCULAR } USARTInterruptCircular_t;
+
+typedef struct {
+  void* buff;  /**< Pointer to data buffer */
+  int32_t len; /**< Length of buffer in bytes */
+} USARTBuffer_t;
+
+typedef struct {
+  USARTBuffer_t tx;                  /**< Transmit buffer */
+  USARTBuffer_t rx;                  /**< Receive buffer */
+  USARTInterruptCircular_t circular; /**< Enable or disable circular mode */
+  USARTEnable_t tx_complete_en;
+  USARTEnable_t idle_en;
+  USARTEnable_t line_break_detected_en;
+  USARTEnable_t noise_detected_en;
+  USARTEnable_t overrun_error_en;
+  USARTEnable_t framing_err_en;
+  USARTEnable_t parity_err_en;
+  void (*callback)(void); /**< Callback function on completion */
+} USARTInterruptConfig_t;
 
 typedef struct {
   uint32_t peri_clock_freq_hz;
@@ -42,22 +82,35 @@ typedef struct {
   USARTPartityType_t parity_type;
   USARTSynchronous_t synchronous;
   USARTHWFlowControl_t hw_flow_control;
+  USARTEnable_t interrupt_en;
   USARTEnable_t en_on_start;
 } USARTConfig_t;
 
 typedef struct {
-  USART_TypeDef *addr;
+  USART_TypeDef* addr;
   USARTConfig_t cfg;
 } USARTHandle_t;
 
-USARTStatus_t usart_peri_clock_control(const USART_TypeDef *usart_reg, const USARTEnable_t en_state);
-USARTStatus_t usart_init(const USARTHandle_t *usart_handle);
-USARTStatus_t usart_deinit(const USART_TypeDef *usart_reg);
-USARTStatus_t usart_enable(USART_TypeDef *usart_reg);
-USARTStatus_t usart_disable(USART_TypeDef *usart_reg);
-void usart_tx_byte_blocking(USART_TypeDef *usart_reg, uint8_t tx_byte);
-uint8_t usart_rx_byte_blocking(const USART_TypeDef *usart_reg);
-USARTStatus_t usart_tx_word_blocking(USART_TypeDef *usart_reg, void *tx_buff, uint16_t len);
-USARTStatus_t usart_rx_word_blocking(const USART_TypeDef *usart_reg, void *rx_buff, uint16_t len);
+// Control functions
+USARTStatus_t usart_peri_clock_control(const USART_TypeDef* usart_reg, const USARTEnable_t en_state);
+USARTStatus_t usart_init(const USARTHandle_t* usart_handle);
+USARTStatus_t usart_deinit(const USART_TypeDef* usart_reg);
+USARTStatus_t usart_enable(USART_TypeDef* usart_reg);
+USARTStatus_t usart_disable(USART_TypeDef* usart_reg);
+
+// Blockin tx/rx
+void usart_tx_byte_blocking(USART_TypeDef* usart_reg, uint8_t tx_byte);
+uint8_t usart_rx_byte_blocking(const USART_TypeDef* usart_reg);
+USARTStatus_t usart_tx_word_blocking(USART_TypeDef* usart_reg, void* tx_buff, uint16_t len);
+USARTStatus_t usart_rx_word_blocking(const USART_TypeDef* usart_reg, void* rx_buff, uint16_t len);
+
+// Interrupt based tx/rx
+USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterruptConfig_t* setup_info);
+USARTStatus_t usart_reset_interrupt(const USART_TypeDef* usart_reg);
+USARTStatus_t usart_start_interrupt(USART_TypeDef* usart_reg);
+USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg);
+USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg);
+//
+// DMA based tx/rx
 
 #endif
