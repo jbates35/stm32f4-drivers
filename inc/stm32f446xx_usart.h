@@ -9,7 +9,7 @@
 
 #include "stm32f446xx.h"
 
-typedef enum { USART_STATUS_OK = 0, USART_STATUS_INVALID_ADDR = -1 } USARTStatus_t;
+typedef enum { USART_STATUS_OK = 0, USART_STATUS_INVALID_ADDR = -1, USART_STATUS_INTERRUPT_BUSY = -2 } USARTStatus_t;
 typedef enum { USART_MODE_TX_ONLY, USART_MODE_RX_ONLY, USART_MODE_BIDIRECTIONAL } USARTMode_t;
 typedef enum {
   USART_BAUD_RATE_150 = 150,
@@ -65,11 +65,7 @@ typedef struct {
   USARTInterruptCircular_t circular; /**< Enable or disable circular mode */
   USARTEnable_t tx_complete_en;
   USARTEnable_t idle_en;
-  USARTEnable_t line_break_detected_en;
-  USARTEnable_t noise_detected_en;
-  USARTEnable_t overrun_error_en;
-  USARTEnable_t framing_err_en;
-  USARTEnable_t parity_err_en;
+  USARTEnable_t error_interrupts_en;
   void (*callback)(void); /**< Callback function on completion */
 } USARTInterruptConfig_t;
 
