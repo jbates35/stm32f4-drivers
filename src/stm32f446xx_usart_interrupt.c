@@ -10,6 +10,8 @@
 
 #define USART_NUMS 6
 
+typedef enum { USART_INT_TSTATUS_OK, USART_INT_TSTATUS_INVALID_TRANSACTION } USARTIntTransferStatus_t;
+
 typedef struct {
   void* buff;
   int32_t len;
@@ -139,7 +141,17 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
 
 USARTStatus_t usart_reset_interrupt(const USART_TypeDef* usart_reg) {}
 USARTStatus_t usart_start_interrupt(USART_TypeDef* usart_reg) {}
-USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {}
+
+USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {
+  USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+
+  if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
+
+  USARTIntTransferStatus_t tstatus = USART_INT_TSTATUS_OK;
+
+  return int_info->status;
+}
 
 USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
   // Normal transmissions
