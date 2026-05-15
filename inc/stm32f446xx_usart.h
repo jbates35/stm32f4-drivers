@@ -78,7 +78,7 @@ typedef struct {
   USARTPartityType_t parity_type;
   USARTSynchronous_t synchronous;
   USARTHWFlowControl_t hw_flow_control;
-  USARTEnable_t interrupt_en;
+  USARTEnable_t rx_interrupt_en;
   USARTEnable_t en_on_start;
 } USARTConfig_t;
 
