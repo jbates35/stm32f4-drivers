@@ -142,6 +142,33 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
 USARTStatus_t usart_reset_interrupt(const USART_TypeDef* usart_reg) {}
 USARTStatus_t usart_start_interrupt(USART_TypeDef* usart_reg) {}
 
+USARTStatus_t usart_set_tx(USART_TypeDef* usart_reg, USARTBuffer_t* tx) {
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
+
+  if (int_info->status == USART_INTERRUPT_STATUS_BUSY) return USART_STATUS_INTERRUPT_BUSY;
+
+  int_info->tx.buff = tx->buff;
+  int_info->tx.len = tx->len;
+  int_info->tx.eles_left = tx->len;
+  int_info->tx.en = USART_ENABLE;
+
+  return USART_STATUS_OK;
+}
+
+USARTStatus_t usart_set_rx(USART_TypeDef* usart_reg, USARTBuffer_t* rx) {
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
+
+  if (int_info->status == USART_INTERRUPT_STATUS_BUSY) return USART_STATUS_INTERRUPT_BUSY;
+
+  int_info->rx.buff = rx->buff;
+  int_info->rx.len = rx->len;
+  int_info->rx.eles_left = rx->len;
+  int_info->rx.en = USART_ENABLE;
+
+  return USART_STATUS_OK;
+}
 USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {
   USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
