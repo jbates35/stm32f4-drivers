@@ -145,10 +145,11 @@ USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg) {
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
+  // Disable TXE to essentially stop any transfer
+  usart_reg->CR1 &= ~USART_CR1_TXEIE;
+
   int_info->tx.eles_left = int_info->tx.len;
   int_info->tx.en = USART_ENABLE;
-
-  usart_reg->CR1 &= ~USART_CR1_TXEIE;
 
   int_info->rx.eles_left = int_info->rx.len;
   int_info->rx.en = USART_ENABLE;

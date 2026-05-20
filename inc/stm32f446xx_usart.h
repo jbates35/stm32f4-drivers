@@ -102,8 +102,8 @@ USARTStatus_t usart_rx_word_blocking(const USART_TypeDef* usart_reg, void* rx_bu
 
 // Interrupt based tx/rx
 USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterruptConfig_t* setup_info);
-USARTStatus_t usart_reset_interrupt(const USART_TypeDef* usart_reg);
-USARTStatus_t usart_start_interrupt(USART_TypeDef* usart_reg);
+USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg);
+USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg);
 USARTStatus_t usart_set_tx(USART_TypeDef* usart_reg, USARTBuffer_t* tx);
 USARTStatus_t usart_set_rx(USART_TypeDef* usart_reg, USARTBuffer_t* rx);
 USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg);
