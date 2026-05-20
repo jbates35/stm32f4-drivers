@@ -141,8 +141,33 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_reset_interrupt(const USART_TypeDef* usart_reg) {}
-USARTStatus_t usart_start_interrupt(USART_TypeDef* usart_reg) {}
+USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg) {
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
+
+  int_info->tx.eles_left = int_info->tx.len;
+  int_info->tx.en = USART_ENABLE;
+
+  usart_reg->CR1 &= ~USART_CR1_TXEIE;
+
+  int_info->rx.eles_left = int_info->rx.len;
+  int_info->rx.en = USART_ENABLE;
+
+  int_info->status = USART_INTERRUPT_STATUS_READY;
+
+  return USART_STATUS_OK;
+}
+
+USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg) {
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
+
+  // Start transaction, change struct to busy so user knows they shouldn't touch CRs and what not
+  int_info->status = USART_INTERRUPT_STATUS_BUSY;
+  usart_reg->CR1 |= USART_CR1_TXEIE;
+
+  return USART_STATUS_OK;
+}
 
 USARTStatus_t usart_set_tx(USART_TypeDef* usart_reg, USARTBuffer_t* tx) {
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
