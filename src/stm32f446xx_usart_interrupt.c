@@ -197,6 +197,8 @@ USARTStatus_t usart_set_rx(USART_TypeDef* usart_reg, USARTBuffer_t* rx) {
 
   return USART_STATUS_OK;
 }
+
+// NOTE: YO - might need to break this up into separate rx/tx functions as USART tends to be unrelated unlike I2C
 USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {
   USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
