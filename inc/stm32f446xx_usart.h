@@ -55,18 +55,18 @@ typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 typedef enum { USART_INTERRUPT_CIRCULAR, USART_INTERRUPT_NON_CIRCULAR } USARTInterruptCircular_t;
 
 typedef struct {
-  void* buff;  /**< Pointer to data buffer */
-  int32_t len; /**< Length of buffer in bytes */
+  void* buff;                        /**< Pointer to data buffer */
+  int32_t len;                       /**< Length of buffer in bytes */
+  USARTInterruptCircular_t circular; /**< Enable or disable circular mode */
+  void (*callback)(void);            /**< Callback function on completion */
 } USARTBuffer_t;
 
 typedef struct {
-  USARTBuffer_t tx;                  /**< Transmit buffer */
-  USARTBuffer_t rx;                  /**< Receive buffer */
-  USARTInterruptCircular_t circular; /**< Enable or disable circular mode */
+  USARTBuffer_t tx; /**< Transmit buffer */
+  USARTBuffer_t rx; /**< Receive buffer */
   USARTEnable_t tx_complete_en;
   USARTEnable_t idle_en;
   USARTEnable_t error_interrupts_en;
-  void (*callback)(void); /**< Callback function on completion */
 } USARTInterruptConfig_t;
 
 typedef struct {
@@ -104,9 +104,10 @@ USARTStatus_t usart_rx_word_blocking(const USART_TypeDef* usart_reg, void* rx_bu
 USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterruptConfig_t* setup_info);
 USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg);
 USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg);
-USARTStatus_t usart_set_tx(USART_TypeDef* usart_reg, USARTBuffer_t* tx);
-USARTStatus_t usart_set_rx(USART_TypeDef* usart_reg, USARTBuffer_t* rx);
-USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg);
+USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx);
+USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx);
+USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg);
+USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg);
 USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg);
 //
 // DMA based tx/rx

@@ -19,18 +19,17 @@ typedef struct {
   int32_t len;
   int32_t eles_left;
   USARTEnable_t en;
+  USARTInterruptStatus_t status;
+  USARTInterruptCircular_t circular;
+  void (*callback)(void);
 } USARTInterruptBuffer_t;
 
 typedef struct {
   USARTInterruptBuffer_t tx;
   USARTInterruptBuffer_t rx;
-  USARTInterruptStatus_t status;
-  uint8_t address;
-  USARTInterruptCircular_t circular;
   // DMA_Stream_TypeDef* tx_stream;
   // DMA_Stream_TypeDef* rx_stream;
   // void (*dma_start_transfer_cb)(DMA_Stream_TypeDef*, uint32_t);
-  void (*callback)(void);
 } USARTInterruptInfo_t;
 
 // For recording callbacks, information, etc. Kinda OOP
@@ -79,23 +78,22 @@ static inline void clear_usart_info(volatile USARTInterruptInfo_t* int_info) {
   int_info->tx.len = 0;
   int_info->tx.eles_left = 0;
   int_info->tx.en = USART_DISABLE;
+  int_info->tx.callback = 0;
+  int_info->tx.circular = 0;
+  int_info->tx.status = USART_INTERRUPT_STATUS_READY;
   int_info->rx.buff = 0;
   int_info->rx.len = 0;
   int_info->rx.eles_left = 0;
   int_info->rx.en = USART_DISABLE;
-  int_info->status = USART_INTERRUPT_STATUS_READY;
-  int_info->address = 0;
-  int_info->callback = 0;
-  int_info->circular = 0;
+  int_info->rx.callback = 0;
+  int_info->rx.circular = 0;
+  int_info->rx.status = USART_INTERRUPT_STATUS_READY;
 }
 
 USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterruptConfig_t* setup_info) {
   // Get interrupt info
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
-
-  // Maybe have a look at this line ...
-  if (int_info->status == USART_INTERRUPT_STATUS_BUSY) return USART_STATUS_INTERRUPT_BUSY;
 
   // Setup interrupt types
   // Error interrupts
@@ -117,26 +115,8 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
   else
     usart_reg->CR1 &= ~USART_CR1_TCIE;
 
-  // Set tx/rx accordingly
-  int_info->tx.len = setup_info->tx.len;
-  int_info->tx.eles_left = setup_info->tx.len;
-  int_info->tx.buff = setup_info->tx.buff;
-
-  // Enable if tx stuff has buffer was assigned and length isn't 0
-  int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? USART_ENABLE : USART_DISABLE;
-
-  int_info->rx.len = setup_info->rx.len;
-  int_info->rx.eles_left = setup_info->rx.len;
-  int_info->rx.buff = setup_info->rx.buff;
-
-  // Enable if rx stuff has buffer was assigned and length isn't 0
-  int_info->rx.en = (int_info->rx.buff != NULL && int_info->rx.len) ? USART_ENABLE : USART_DISABLE;
-
-  // General interrupt stuff
-  int_info->circular = setup_info->circular;
-  int_info->callback = setup_info->callback;
-
-  int_info->status = USART_INTERRUPT_STATUS_READY;
+  usart_setup_tx(usart_reg, &setup_info->tx);
+  usart_setup_rx(usart_reg, &setup_info->rx);
 
   return USART_STATUS_OK;
 }
@@ -150,11 +130,11 @@ USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg) {
 
   int_info->tx.eles_left = int_info->tx.len;
   int_info->tx.en = USART_ENABLE;
+  int_info->tx.status = USART_INTERRUPT_STATUS_READY;
 
   int_info->rx.eles_left = int_info->rx.len;
   int_info->rx.en = USART_ENABLE;
-
-  int_info->status = USART_INTERRUPT_STATUS_READY;
+  int_info->rx.status = USART_INTERRUPT_STATUS_READY;
 
   return USART_STATUS_OK;
 }
@@ -164,42 +144,54 @@ USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg) {
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
   // Start transaction, change struct to busy so user knows they shouldn't touch CRs and what not
-  int_info->status = USART_INTERRUPT_STATUS_BUSY;
+  int_info->tx.status = USART_INTERRUPT_STATUS_BUSY;
   usart_reg->CR1 |= USART_CR1_TXEIE;
 
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_set_tx(USART_TypeDef* usart_reg, USARTBuffer_t* tx) {
+USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx) {
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
-  if (int_info->status == USART_INTERRUPT_STATUS_BUSY) return USART_STATUS_INTERRUPT_BUSY;
+  usart_reg->CR1 &= ~USART_CR1_TXEIE;
 
   int_info->tx.buff = tx->buff;
   int_info->tx.len = tx->len;
   int_info->tx.eles_left = tx->len;
-  int_info->tx.en = USART_ENABLE;
+  int_info->tx.circular = tx->circular;
+  int_info->tx.callback = tx->callback;
+  int_info->tx.en = (int_info->tx.buff != NULL && int_info->tx.len) ? USART_ENABLE : USART_DISABLE;
+
+  // Maybe add logic to restart it if tx had been enabled
 
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_set_rx(USART_TypeDef* usart_reg, USARTBuffer_t* rx) {
+USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) {
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
-  if (int_info->status == USART_INTERRUPT_STATUS_BUSY) return USART_STATUS_INTERRUPT_BUSY;
+  // Keep track of whether rx was enabled
+  uint8_t rx_enabled = (usart_reg->CR1 & USART_CR1_RXNEIE);
+
+  // Disable, the enable after setting
+  usart_reg->CR1 &= ~USART_CR1_RXNEIE;
 
   int_info->rx.buff = rx->buff;
   int_info->rx.len = rx->len;
   int_info->rx.eles_left = rx->len;
-  int_info->rx.en = USART_ENABLE;
+  int_info->rx.circular = rx->circular;
+  int_info->rx.callback = rx->callback;
+  int_info->rx.en = (int_info->rx.buff != NULL && int_info->rx.len) ? USART_ENABLE : USART_DISABLE;
+
+  usart_reg->CR1 |= rx_enabled;  // This will already be bit shifted essentially
 
   return USART_STATUS_OK;
 }
 
 // NOTE: YO - might need to break this up into separate rx/tx functions as USART tends to be unrelated unlike I2C
-USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {
+USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
   USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
 
@@ -207,7 +199,18 @@ USARTInterruptStatus_t usart_irq_word_handling(USART_TypeDef* usart_reg) {
 
   USARTIntTransferStatus_t tstatus = USART_INT_TSTATUS_OK;
 
-  return int_info->status;
+  return int_info->tx.status;
+}
+
+USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
+  USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+
+  if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
+
+  USARTIntTransferStatus_t tstatus = USART_INT_TSTATUS_OK;
+
+  return int_info->rx.status;
 }
 
 USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
