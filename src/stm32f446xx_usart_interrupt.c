@@ -197,7 +197,10 @@ USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
 
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
 
-  USARTIntTransferStatus_t tstatus = USART_INT_TSTATUS_OK;
+  uint8_t no_eles_left = (int_info->tx.eles_left == 0);
+  uint8_t invalid_eles = (int_info->tx.eles_left > int_info->tx.len);
+
+  if (no_eles_left || invalid_eles) return USART_INTERRUPT_STATUS_ERROR;
 
   return int_info->tx.status;
 }
