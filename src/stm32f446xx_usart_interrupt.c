@@ -121,7 +121,7 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
   return USART_STATUS_OK;
 }
 
-USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg) {
+USARTStatus_t usart_reset_tx_interrupt(USART_TypeDef* usart_reg) {
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
@@ -131,6 +131,13 @@ USARTStatus_t usart_reset_interrupt(USART_TypeDef* usart_reg) {
   int_info->tx.eles_left = int_info->tx.len;
   int_info->tx.en = USART_ENABLE;
   int_info->tx.status = USART_INTERRUPT_STATUS_READY;
+
+  return USART_STATUS_OK;
+}
+
+USARTStatus_t usart_reset_rx_interrupt(USART_TypeDef* usart_reg) {
+  volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
   int_info->rx.eles_left = int_info->rx.len;
   int_info->rx.en = USART_ENABLE;
@@ -192,7 +199,6 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) 
 
 // NOTE: YO - might need to break this up into separate rx/tx functions as USART tends to be unrelated unlike I2C
 USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
-  USARTIRQType_t irq_reason = usart_irq_handling(usart_reg);
   volatile USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
 
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
@@ -201,6 +207,26 @@ USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
   uint8_t invalid_eles = (int_info->tx.eles_left > int_info->tx.len);
 
   if (no_eles_left || invalid_eles) return USART_INTERRUPT_STATUS_ERROR;
+
+  int index = int_info->tx.len - int_info->tx.eles_left;
+  uint8_t tx_byte = ((uint8_t*)int_info->tx.buff)[index];
+  usart_reg->DR = tx_byte;
+
+  int_info->tx.eles_left--;
+
+  no_eles_left = (int_info->tx.eles_left == 0);
+
+  if (no_eles_left) {
+    if (int_info->tx.circular == USART_INTERRUPT_CIRCULAR) {
+      usart_reset_tx_interrupt(usart_reg);
+      int_info->tx.callback();
+      usart_start_tx_interrupt(usart_reg);
+    } else {
+      usart_reg->CR1 &= ~USART_CR1_TXEIE;
+      int_info->tx.callback();
+      int_info->tx.status = USART_INTERRUPT_STATUS_DONE;
+    }
+  }
 
   return int_info->tx.status;
 }
