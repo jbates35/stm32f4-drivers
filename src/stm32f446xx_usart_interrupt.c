@@ -218,7 +218,8 @@ USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
     int_info->tx.status = USART_INTERRUPT_STATUS_DONE;
     ret_status = int_info->tx.status;
     usart_reset_tx_interrupt(usart_reg);
-    int_info->tx.callback();
+
+    if (int_info->tx.callback != NULL) int_info->tx.callback();
 
     if (int_info->tx.circular == USART_INTERRUPT_CIRCULAR) usart_start_tx_interrupt(usart_reg);
   }
@@ -230,6 +231,7 @@ USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
   // NOTE:
   // It might be worth having a separate buffer for the tx_rx buffers for the purposes of callbacks
   // If a transmission comes in while performing the callback, there's going to be an error
+  uint8_t rx_byte = usart_reg->DR;
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
 
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
@@ -241,7 +243,6 @@ USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
 
   int index = int_info->rx.len - int_info->rx.eles_left;
 
-  uint8_t rx_byte = usart_reg->DR;
   ((uint8_t*)int_info->rx.in_buff)[index] = rx_byte;
 
   int_info->rx.eles_left--;
@@ -260,7 +261,7 @@ USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
     usart_reg->CR1 |= USART_CR1_RXNEIE;
 
     // Callback and reset
-    int_info->rx.callback();
+    if (int_info->rx.callback != NULL) int_info->rx.callback();
     usart_reset_rx_interrupt(usart_reg);
   }
 
