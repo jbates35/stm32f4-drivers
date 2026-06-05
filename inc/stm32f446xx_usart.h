@@ -55,10 +55,11 @@ typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
 typedef enum { USART_INTERRUPT_CIRCULAR, USART_INTERRUPT_NON_CIRCULAR } USARTInterruptCircular_t;
 
 typedef struct {
-  void* buff;                        /**< Pointer to data buffer */
-  int32_t len;                       /**< Length of buffer in bytes */
-  USARTInterruptCircular_t circular; /**< Enable or disable circular mode */
-  void (*callback)(void);            /**< Callback function on completion */
+  USARTEnable_t en;                  /** Required to set up the interrupt */
+  void* buff;                        /** Pointer to data buffer */
+  int32_t len;                       /** Length of buffer in bytes */
+  USARTInterruptCircular_t circular; /** Enable or disable circular mode */
+  void (*callback)(void);            /** Callback function on completion */
 } USARTBuffer_t;
 
 typedef struct {
@@ -78,7 +79,6 @@ typedef struct {
   USARTPartityType_t parity_type;
   USARTSynchronous_t synchronous;
   USARTHWFlowControl_t hw_flow_control;
-  USARTEnable_t rx_interrupt_en;
   USARTEnable_t en_on_start;
 } USARTConfig_t;
 

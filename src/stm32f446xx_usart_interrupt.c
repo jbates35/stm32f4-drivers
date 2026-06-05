@@ -129,7 +129,11 @@ USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx) 
   int_info->tx.eles_left = tx->len;
   int_info->tx.circular = tx->circular;
   int_info->tx.callback = tx->callback;
-  int_info->tx.en = (int_info->tx.out_buff != NULL && int_info->tx.len) ? USART_ENABLE : USART_DISABLE;
+
+  uint8_t enabled = tx->en;
+  uint8_t has_buffer = int_info->tx.out_buff != NULL;
+  uint8_t has_length = int_info->tx.len > 0;
+  int_info->tx.en = enabled && has_buffer && has_length ? USART_ENABLE : USART_DISABLE;
 
   // Maybe add logic to restart it if tx had been enabled
 
@@ -140,10 +144,7 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) 
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
-  // Keep track of whether rx was enabled
-  uint8_t rx_enabled = (usart_reg->CR1 & USART_CR1_RXNEIE);
-
-  // Disable, the enable after setting
+  // Disable IE in case anything comes here while we're actually resetting the buff and what not
   usart_reg->CR1 &= ~USART_CR1_RXNEIE;
 
   int_info->rx.out_buff = rx->buff;
@@ -151,9 +152,13 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) 
   int_info->rx.eles_left = rx->len;
   int_info->rx.circular = rx->circular;
   int_info->rx.callback = rx->callback;
-  int_info->rx.en = (int_info->rx.out_buff != NULL && int_info->rx.len) ? USART_ENABLE : USART_DISABLE;
 
-  usart_reg->CR1 |= rx_enabled;  // This will already be bit shifted essentially
+  uint8_t enabled = rx->en;
+  uint8_t has_buffer = int_info->rx.out_buff != NULL;
+  uint8_t has_length = int_info->rx.len > 0;
+  int_info->rx.en = enabled && has_buffer && has_length ? USART_ENABLE : USART_DISABLE;
+
+  if (int_info->rx.en) usart_reg->CR1 |= USART_CR1_RXNEIE;  // This will already be bit shifted essentially
 
   return USART_STATUS_OK;
 }
@@ -283,16 +288,4 @@ USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
   if (get_status(usart_reg, USART_SR_NE)) return USART_IRQ_TYPE_NOISE_DETECTED;
 
   return USART_IRQ_TYPE_NONE;
-}
-
-static inline int get_usart_index(const USART_TypeDef* addr) {
-  const volatile USART_TypeDef* usart_addrs[] = USARTS;
-  int usart_index = -1;
-  for (size_t i = 0; i < SIZEOFP(usart_addrs); i++) {
-    if (addr == usart_addrs[i]) {
-      usart_index = i;
-      break;
-    }
-  }
-  return usart_index;
 }

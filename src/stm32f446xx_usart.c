@@ -79,13 +79,8 @@ USARTStatus_t usart_init(const USARTHandle_t* usart_handle) {
     cr1_word |= USART_CR1_PCE;
 
   // Directionality
-  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_TX_ONLY) {
-    cr1_word |= USART_CR1_TE;
-  }
-  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_RX_ONLY) {
-    cr1_word |= USART_CR1_RE;
-    if (cfg->rx_interrupt_en == USART_ENABLE) cr1_word |= USART_CR1_RXNEIE;
-  }
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_TX_ONLY) cr1_word |= USART_CR1_TE;
+  if (cfg->mode == USART_MODE_BIDIRECTIONAL || cfg->mode == USART_MODE_RX_ONLY) cr1_word |= USART_CR1_RE;
 
   // Synchronous mode
   if (cfg->synchronous == USART_SYNCHRONOUS) cr2_word |= USART_CR2_CLKEN;
