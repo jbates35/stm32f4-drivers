@@ -51,15 +51,18 @@ typedef enum { USART_WORD_LENGTH_8_BIT_DATA, USART_WORD_LENGTH_9_BIT_DATA } USAR
 typedef enum { USART_ASYNCHRONOUS, USART_SYNCHRONOUS } USARTSynchronous_t;
 typedef enum { USART_PARITY_NONE, USART_PARITY_EVEN, USART_PARITY_ODD } USARTPartityType_t;
 typedef enum { USART_HW_FLOW_NONE, USART_HW_FLOW_CTS, USART_HW_FLOW_RTS } USARTHWFlowControl_t;
+typedef enum { USART_ACCEPT_ESCAPE_CHARS, USART_IGNORE_ESCAPE_CHARS } USARTIgnoreEscapeChars_t;
 typedef enum { USART_DISABLE = 0, USART_ENABLE } USARTEnable_t;
-typedef enum { USART_INTERRUPT_CIRCULAR, USART_INTERRUPT_NON_CIRCULAR } USARTInterruptCircular_t;
 
 typedef struct {
-  USARTEnable_t en;                  /** Required to set up the interrupt */
-  void* buff;                        /** Pointer to data buffer */
-  int32_t len;                       /** Length of buffer in bytes */
-  USARTInterruptCircular_t circular; /** Enable or disable circular mode */
-  void (*callback)(void);            /** Callback function on completion */
+  USARTEnable_t en;                           /** Required to set up the interrupt */
+  void* buff;                                 /** Pointer to data buffer */
+  int32_t len;                                /** Length of buffer in bytes */
+  USARTEnable_t tx_circular_en;               /** TX Only - Enable or disable circular mode */
+  USARTEnable_t rx_length_byte_en;            /** RX Only - let the first byte be the length of the expected array */
+  USARTIgnoreEscapeChars_t rx_ignore_escapes; /** RX only - ignore '\0' - This should probably not be used at the same
+                                                 time as rx_length_byte_en .. */
+  void (*callback)(void);                     /** Callback function on completion */
 } USARTBuffer_t;
 
 typedef struct {
@@ -110,7 +113,13 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx);
 USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg);
 USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg);
 USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg);
-//
+
+// Interrupt helpers
+USARTInterruptStatus_t usart_get_tx_interrupt_status(USART_TypeDef* usart_reg);
+USARTInterruptStatus_t usart_get_rx_interrupt_status(USART_TypeDef* usart_reg);
+uint16_t usart_get_rx_interrupt_length(USART_TypeDef* usart_reg);
+void usart_set_tx_interrupt_length(USART_TypeDef* usart_reg, uint16_t len);
+
 // DMA based tx/rx
 
 #endif

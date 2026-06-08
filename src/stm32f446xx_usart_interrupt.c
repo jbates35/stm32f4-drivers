@@ -14,16 +14,25 @@
 
 typedef enum { USART_INT_TSTATUS_OK, USART_INT_TSTATUS_INVALID_TRANSACTION } USARTIntTransferStatus_t;
 
+// NOTE: This struct could probably use a refacator
 typedef struct {
+  USARTEnable_t en;  // Whether the interrupt has been enabled (... We need a separate enable byte because the txe in
+                     // the CR is required for program control)
+
   // The following two buffers prevent possible ownership and data corruption issues
-  void* out_buff;        // For rx, this gets loaded with memcpy when the rx transmission is done
-  uint8_t in_buff[256];  // This gets loaded into during the transmission - NOTE: ONLY RX
-  int32_t len;
-  volatile int32_t eles_left;
-  USARTEnable_t en;
-  USARTInterruptStatus_t status;
-  USARTInterruptCircular_t circular;
-  void (*callback)(void);
+  void* out_buff;              // For rx, this gets loaded with memcpy when the rx transmission is done
+  uint8_t in_buff[256];        // This gets loaded into during the transmission - NOTE: ONLY RX
+  int32_t len;                 // The number of bytes expected in the transimssion
+  volatile int32_t eles_left;  // The number of elements left before the tx/rx transmission is considered 'finished'
+  USARTInterruptStatus_t
+      status;  // Current status of the interrupt - Could be used to be shown to user of API with a getter
+  USARTEnable_t tx_circular_en;     // Whether tx transmission should start again once the callback has been called
+  uint32_t rx_len_at_config;        // Length as dictated by config so that the len works properly
+  USARTEnable_t rx_length_byte_en;  // If enabled, first byte in RX transmission will be used to set the expected length
+                                    // of the rx transmission
+  uint8_t rx_length_byte_received;  // Whether to take the transmitted byte as the length or the start of the buff
+  USARTIgnoreEscapeChars_t rx_ignore_escapes;  // Whether to ignore escapes i.e. throw it away
+  void (*callback)(void);                      // Function called when the transmission is finished
 } USARTInterruptBuffer_t;
 
 typedef struct {
@@ -63,15 +72,17 @@ static inline void clear_usart_info(USARTInterruptInfo_t* int_info) {
   int_info->tx.len = 0;
   int_info->tx.eles_left = 0;
   int_info->tx.en = USART_DISABLE;
-  int_info->tx.callback = 0;
-  int_info->tx.circular = 0;
+  int_info->tx.callback = NULL;
+  int_info->tx.tx_circular_en = USART_DISABLE;
   int_info->tx.status = USART_INTERRUPT_STATUS_READY;
   int_info->rx.out_buff = 0;
   int_info->rx.len = 0;
+  int_info->rx.rx_len_at_config = 0;
   int_info->rx.eles_left = 0;
   int_info->rx.en = USART_DISABLE;
-  int_info->rx.callback = 0;
-  int_info->rx.circular = 0;
+  int_info->rx.callback = NULL;
+  int_info->rx.rx_length_byte_received = 0;
+  int_info->rx.rx_length_byte_en = USART_DISABLE;
   int_info->rx.status = USART_INTERRUPT_STATUS_READY;
 }
 
@@ -127,7 +138,7 @@ USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx) 
   int_info->tx.out_buff = tx->buff;
   int_info->tx.len = tx->len;
   int_info->tx.eles_left = tx->len;
-  int_info->tx.circular = tx->circular;
+  int_info->tx.tx_circular_en = tx->tx_circular_en;
   int_info->tx.callback = tx->callback;
 
   uint8_t enabled = tx->en;
@@ -148,9 +159,11 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) 
   usart_reg->CR1 &= ~USART_CR1_RXNEIE;
 
   int_info->rx.out_buff = rx->buff;
+  int_info->rx.rx_len_at_config = rx->len;
   int_info->rx.len = rx->len;
   int_info->rx.eles_left = rx->len;
-  int_info->rx.circular = rx->circular;
+  int_info->rx.rx_length_byte_en = rx->rx_length_byte_en;
+  int_info->rx.rx_length_byte_received = 0;
   int_info->rx.callback = rx->callback;
 
   uint8_t enabled = rx->en;
@@ -181,9 +194,11 @@ USARTStatus_t usart_reset_rx_interrupt(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
 
+  int_info->rx.len = int_info->rx.rx_len_at_config;
   int_info->rx.eles_left = int_info->rx.len;
   int_info->rx.en = USART_ENABLE;
   int_info->rx.status = USART_INTERRUPT_STATUS_BUSY;
+  int_info->rx.rx_length_byte_received = 0;
 
   return USART_STATUS_OK;
 }
@@ -226,7 +241,7 @@ USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
 
     if (int_info->tx.callback != NULL) int_info->tx.callback();
 
-    if (int_info->tx.circular == USART_INTERRUPT_CIRCULAR) usart_start_tx_interrupt(usart_reg);
+    if (int_info->tx.tx_circular_en == USART_ENABLE) usart_start_tx_interrupt(usart_reg);
   }
 
   return ret_status;
@@ -236,24 +251,37 @@ USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
   // NOTE:
   // It might be worth having a separate buffer for the tx_rx buffers for the purposes of callbacks
   // If a transmission comes in while performing the callback, there's going to be an error
-  uint8_t rx_byte = usart_reg->DR;
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
 
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
 
+  uint8_t rx_byte = usart_reg->DR;
+
+  uint8_t length_byte_en = (int_info->rx.rx_length_byte_en == USART_ENABLE);
+  uint8_t length_byte_received = (int_info->rx.rx_length_byte_received);
+  if (length_byte_en && !length_byte_received) {
+    int_info->rx.len = rx_byte;
+    int_info->rx.eles_left = rx_byte;
+    int_info->rx.rx_length_byte_received = 1;
+    return int_info->rx.status;
+  }
+
+  uint8_t ignore_escapes = (int_info->rx.rx_ignore_escapes == USART_IGNORE_ESCAPE_CHARS);
+  uint8_t start_of_rx = (int_info->rx.eles_left == int_info->rx.len);
+  uint8_t escape_char_sent = (rx_byte == '\0' || rx_byte == '\n' || rx_byte == '\r');
+
+  if (ignore_escapes && escape_char_sent)
+    return int_info->rx.status;
+  else if (!ignore_escapes && !start_of_rx && escape_char_sent) {
+    int_info->rx.len = int_info->rx.len - int_info->rx.eles_left;
+    int_info->rx.eles_left = 0;
+  } else {
+    int index = int_info->rx.len - int_info->rx.eles_left;
+    ((uint8_t*)int_info->rx.in_buff)[index] = rx_byte;
+    int_info->rx.eles_left--;
+  }
+
   uint8_t no_eles_left = (int_info->rx.eles_left == 0);
-  uint8_t invalid_eles = (int_info->rx.eles_left > int_info->rx.len);
-
-  if (no_eles_left || invalid_eles) return USART_INTERRUPT_STATUS_ERROR;
-
-  int index = int_info->rx.len - int_info->rx.eles_left;
-
-  ((uint8_t*)int_info->rx.in_buff)[index] = rx_byte;
-
-  int_info->rx.eles_left--;
-
-  no_eles_left = (int_info->rx.eles_left == 0);
-
   USARTInterruptStatus_t ret_status = int_info->rx.status;
   if (no_eles_left) {
     // Temporarirly change status to DONE, and ret_status to too so user can do something if need be
@@ -288,4 +316,28 @@ USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
   if (get_status(usart_reg, USART_SR_NE)) return USART_IRQ_TYPE_NOISE_DETECTED;
 
   return USART_IRQ_TYPE_NONE;
+}
+
+USARTInterruptStatus_t usart_get_tx_interrupt_status(USART_TypeDef* usart_reg) {
+  USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
+  return int_info->tx.status;
+}
+
+USARTInterruptStatus_t usart_get_rx_interrupt_status(USART_TypeDef* usart_reg) {
+  USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
+  return int_info->rx.status;
+}
+
+uint16_t usart_get_rx_interrupt_length(USART_TypeDef* usart_reg) {
+  USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return 0;
+  return int_info->rx.len;
+}
+
+void usart_set_tx_interrupt_length(USART_TypeDef* usart_reg, uint16_t len) {
+  USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
+  if (int_info == NULL) return;
+  int_info->tx.len = len;
 }
