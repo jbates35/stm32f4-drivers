@@ -92,6 +92,10 @@ USARTStatus_t usart_init(const USARTHandle_t* usart_handle) {
   if (cfg->hw_flow_control == USART_HW_FLOW_CTS) cr3_word |= USART_CR3_CTSE;
   if (cfg->hw_flow_control == USART_HW_FLOW_RTS) cr3_word |= USART_CR3_RTSE;
 
+  // DMA
+  if (cfg->tx_dma_en == USART_ENABLE) cr3_word |= USART_CR3_DMAT;
+  if (cfg->rx_dma_en == USART_ENABLE) cr3_word |= USART_CR3_DMAR;
+
   addr->CR3 = cr3_word;
   addr->CR2 = cr2_word;
   addr->CR1 = cr1_word;
