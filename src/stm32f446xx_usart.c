@@ -12,7 +12,7 @@
 static inline int get_usart_index(const USART_TypeDef* addr) {
   const volatile USART_TypeDef* usart_addrs[] = USARTS;
   int usart_index = -1;
-  for (int i = 0; i < SIZEOFP(usart_addrs); i++) {
+  for (size_t i = 0; i < SIZEOFP(usart_addrs); i++) {
     if (addr == usart_addrs[i]) {
       usart_index = i;
       break;
@@ -31,6 +31,14 @@ static inline int is_usart_instance(const USART_TypeDef* usart_reg) {
           usart_reg == UART5 || usart_reg == USART6);
 }
 
+/**
+ * @brief Turns the USART peripheral clock on/off
+ *
+ * @param usart_reg Base address of UART/USART peripheral
+ * @param en_state Whether to enable or disable the peripheral clock
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_peri_clock_control(const USART_TypeDef* usart_reg, const USARTEnable_t en_state) {
   int index = get_usart_index(usart_reg);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
@@ -46,6 +54,13 @@ USARTStatus_t usart_peri_clock_control(const USART_TypeDef* usart_reg, const USA
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Initializes the usart peripheral with the configuration struct in the usart_handle
+ *
+ * @param usart_handle Handle containing the base address of the usart perpiheral, plus the configuration struct
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_init(const USARTHandle_t* usart_handle) {
   USART_TypeDef* addr = usart_handle->addr;
 
@@ -104,6 +119,13 @@ USARTStatus_t usart_init(const USARTHandle_t* usart_handle) {
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Resets the USART peripheral to its default state and disables its clock.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_deinit(const USART_TypeDef* usart_reg) {
   int index = get_usart_index(usart_reg);
   if (index < 0) return USART_STATUS_INVALID_ADDR;
@@ -119,30 +141,66 @@ USARTStatus_t usart_deinit(const USART_TypeDef* usart_reg) {
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Enables the USART peripheral (sets the UE bit in CR1).
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_enable(USART_TypeDef* usart_reg) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
   usart_reg->CR1 |= USART_CR1_UE;
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Disables the USART peripheral (clears the UE bit in CR1).
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_disable(USART_TypeDef* usart_reg) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
   usart_reg->CR1 &= ~USART_CR1_UE;
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Transmits a single byte over USART, blocking until the data register is empty.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param tx_byte   Byte to transmit
+ */
 void usart_tx_byte_blocking(USART_TypeDef* usart_reg, uint8_t tx_byte) {
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_TXE));
   usart_reg->DR = tx_byte;
 }
 
+/**
+ * @brief Receives a single byte over USART, blocking until data is available.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return uint8_t The received byte
+ */
 uint8_t usart_rx_byte_blocking(const USART_TypeDef* usart_reg) {
   // While the TX Buffer is not empty...
   while (!get_status(usart_reg, USART_SR_RXNE));
   return (uint8_t)usart_reg->DR;
 }
 
+/**
+ * @brief Transmits a buffer of bytes over USART, blocking until all bytes are sent.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param tx_buff   Pointer to the transmit buffer
+ * @param len       Number of bytes to transmit
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_tx_word_blocking(USART_TypeDef* usart_reg, void* tx_buff, uint16_t len) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
 
@@ -154,6 +212,15 @@ USARTStatus_t usart_tx_word_blocking(USART_TypeDef* usart_reg, void* tx_buff, ui
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Receives a buffer of bytes over USART, blocking until all bytes are received.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param rx_buff   Pointer to the receive buffer
+ * @param len       Number of bytes to receive
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_rx_word_blocking(const USART_TypeDef* usart_reg, void* rx_buff, uint16_t len) {
   if (!is_usart_instance(usart_reg)) return USART_STATUS_INVALID_ADDR;
 

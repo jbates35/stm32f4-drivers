@@ -38,9 +38,6 @@ typedef struct {
 typedef struct {
   USARTInterruptBuffer_t tx;
   USARTInterruptBuffer_t rx;
-  // DMA_Stream_TypeDef* tx_stream;
-  // DMA_Stream_TypeDef* rx_stream;
-  // void (*dma_start_transfer_cb)(DMA_Stream_TypeDef*, uint32_t);
 } USARTInterruptInfo_t;
 
 // For recording callbacks, information, etc. Kinda OOP
@@ -86,6 +83,17 @@ static inline void clear_usart_info(USARTInterruptInfo_t* int_info) {
   int_info->rx.status = USART_INTERRUPT_STATUS_READY;
 }
 
+/**
+ * @brief Configures TX and RX interrupts for the given USART peripheral.
+ *
+ * Stores the buffer descriptors and enables the interrupt sources specified in
+ * setup_info. Must be called before starting an interrupt-driven transfer.
+ *
+ * @param usart_reg  Base address of the USART/UART peripheral
+ * @param setup_info Pointer to the interrupt configuration struct
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterruptConfig_t* setup_info) {
   // NOTE: Mention in docs that any alterations for interrupts that are manual need to be set after this function
   // Such as, perhaps, setting the CTSIE
@@ -129,6 +137,14 @@ USARTStatus_t usart_setup_interrupt(USART_TypeDef* usart_reg, const USARTInterru
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Updates the TX buffer descriptor without reconfiguring other interrupt settings.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param tx        Pointer to the transmit buffer configuration
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
@@ -151,6 +167,14 @@ USARTStatus_t usart_setup_tx(USART_TypeDef* usart_reg, const USARTBuffer_t* tx) 
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Updates the RX buffer descriptor without reconfiguring other interrupt settings.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param rx        Pointer to the receive buffer configuration
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
@@ -176,6 +200,13 @@ USARTStatus_t usart_setup_rx(USART_TypeDef* usart_reg, const USARTBuffer_t* rx) 
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Disables the TX interrupt and resets the transmit state to idle.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_reset_tx_interrupt(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
@@ -190,6 +221,13 @@ USARTStatus_t usart_reset_tx_interrupt(USART_TypeDef* usart_reg) {
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Disables the RX interrupt and resets the receive state to idle.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_reset_rx_interrupt(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
@@ -203,6 +241,16 @@ USARTStatus_t usart_reset_rx_interrupt(USART_TypeDef* usart_reg) {
   return USART_STATUS_OK;
 }
 
+/**
+ * @brief Enables the TXE interrupt to begin an interrupt-driven transmission.
+ *
+ * The TX buffer must have been set up via usart_setup_tx() or usart_setup_interrupt()
+ * before calling this function.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTStatus_t Return status of the function
+ */
 USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_STATUS_INVALID_ADDR;
@@ -214,7 +262,17 @@ USARTStatus_t usart_start_tx_interrupt(USART_TypeDef* usart_reg) {
   return USART_STATUS_OK;
 }
 
-// NOTE: YO - might need to break this up into separate rx/tx functions as USART tends to be unrelated unlike I2C
+/**
+ * @brief Services a TXE interrupt — writes the next byte from the TX buffer to DR.
+ *
+ * Should be called from the USARTx_IRQHandler when usart_irq_handling() returns
+ * USART_IRQ_TYPE_TXE. Automatically disables the TXE interrupt and invokes the
+ * callback when the buffer is exhausted.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTInterruptStatus_t Current TX interrupt status after handling
+ */
 USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
 
@@ -247,6 +305,17 @@ USARTInterruptStatus_t usart_irq_tx_word_handling(USART_TypeDef* usart_reg) {
   return ret_status;
 }
 
+/**
+ * @brief Services an RXNE interrupt — reads the next byte from DR into the RX buffer.
+ *
+ * Should be called from the USARTx_IRQHandler when usart_irq_handling() returns
+ * USART_IRQ_TYPE_RXNE. Invokes the callback when the expected number of bytes
+ * has been received.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTInterruptStatus_t Current RX interrupt status after handling
+ */
 USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
   // NOTE:
   // It might be worth having a separate buffer for the tx_rx buffers for the purposes of callbacks
@@ -301,6 +370,16 @@ USARTInterruptStatus_t usart_irq_rx_word_handling(USART_TypeDef* usart_reg) {
   return ret_status;
 }
 
+/**
+ * @brief Identifies which interrupt event has occurred on the USART peripheral.
+ *
+ * Reads the status register and returns the highest-priority active IRQ type.
+ * Intended to be the first call inside a USARTx_IRQHandler.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTIRQType_t The type of interrupt that fired
+ */
 USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
   // Normal transmissions
   if (get_status(usart_reg, USART_SR_RXNE)) return USART_IRQ_TYPE_RXNE;
@@ -318,24 +397,56 @@ USARTIRQType_t usart_irq_handling(const USART_TypeDef* usart_reg) {
   return USART_IRQ_TYPE_NONE;
 }
 
+/**
+ * @brief Returns the current status of the TX interrupt state machine.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTInterruptStatus_t Current TX interrupt status
+ */
 USARTInterruptStatus_t usart_get_tx_interrupt_status(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
   return int_info->tx.status;
 }
 
+/**
+ * @brief Returns the current status of the RX interrupt state machine.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return USARTInterruptStatus_t Current RX interrupt status
+ */
 USARTInterruptStatus_t usart_get_rx_interrupt_status(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return USART_INTERRUPT_STATUS_INVALID_ADDR;
   return int_info->rx.status;
 }
 
+/**
+ * @brief Returns the number of bytes received in the last interrupt-driven transfer.
+ *
+ * Useful when the RX length is determined dynamically (e.g. via the length-byte feature).
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ *
+ * @return uint16_t Number of bytes received
+ */
 uint16_t usart_get_rx_interrupt_length(USART_TypeDef* usart_reg) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return 0;
   return int_info->rx.len;
 }
 
+/**
+ * @brief Overrides the expected TX transfer length at runtime.
+ *
+ * Can be used to adjust the number of bytes to transmit after the buffer has
+ * already been set up.
+ *
+ * @param usart_reg Base address of the USART/UART peripheral
+ * @param len       New transfer length in bytes
+ */
 void usart_set_tx_interrupt_length(USART_TypeDef* usart_reg, uint16_t len) {
   USARTInterruptInfo_t* int_info = get_usart_int_info(usart_reg);
   if (int_info == NULL) return;
