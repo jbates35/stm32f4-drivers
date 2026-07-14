@@ -349,7 +349,7 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef* i2c_reg) {
   if (int_info->tx.en) {
     // TX:
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 0);
+      send_addr(i2c_reg, int_info->address, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission(i2c_reg, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_TXE && int_info->tx.eles_left) {
@@ -360,7 +360,7 @@ I2CInterruptStatus_t i2c_irq_word_handling(I2C_TypeDef* i2c_reg) {
   } else if (int_info->rx.en) {
     // RX:
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 1);
+      send_addr(i2c_reg, int_info->address, 1);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission(i2c_reg, 1);
       // Special method required to set up if length of transfer is just 1
@@ -478,6 +478,7 @@ I2CStatus_t i2c_setup_interrupt_dma(const I2C_TypeDef* i2c_reg, const I2CDMAConf
   // General interrupt stuff
   int_info->circular = setup_info->circular;
   int_info->callback = setup_info->callback;
+  int_info->address = setup_info->address;
 
   // DMA specific stuf
   int_info->tx_stream = setup_info->tx_stream;
@@ -506,14 +507,14 @@ I2CInterruptStatus_t i2c_dma_irq_handling_start(I2C_TypeDef* i2c_reg) {
   if (int_info->tx.en) {
     // TX logic - send address, start dma ...
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 0);
+      send_addr(i2c_reg, int_info->address, 0);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission_dma(i2c_reg, int_info, 0);
     }
   } else if (int_info->rx.en) {
     // RX logic - send address, start dma ...
     if (irq_reason == I2C_IRQ_TYPE_STARTED) {
-      send_addr(i2c_reg, 0x68, 1);
+      send_addr(i2c_reg, int_info->address, 1);
     } else if (irq_reason == I2C_IRQ_TYPE_ADDR_SENT) {
       init_xmission_dma(i2c_reg, int_info, 1);
     }
