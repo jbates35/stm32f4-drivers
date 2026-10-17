@@ -39,12 +39,12 @@
  *
  * @retval 0 on success, -1 on failure (e.g., if base_addr is NULL or out of range).
  */
-int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state) {
+int timer_peri_clock_control(const TIM_TypeDef* base_addr, const uint8_t en_state) {
   if (base_addr == NULL) return -1;
 
   // Grab the index of the current timer
-  const TIM_TypeDef *timers_arr[] = TIMERS;
-  int i = 0;
+  const TIM_TypeDef* timers_arr[] = TIMERS;
+  size_t i = 0;
   for (; i < SIZEOFP(timers_arr); i++) {
     if (timers_arr[i] == base_addr) break;
   }
@@ -54,7 +54,7 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
 
   // Turn on either a register in APB1 or APB2 according to the timer addr
   const uint32_t timer_rcc_pos_arr[] = TIMERS_RCC_POS;
-  volatile uint32_t *timer_rcc_reg_arr[] = TIMERS_RCC_REGS;
+  volatile uint32_t* timer_rcc_reg_arr[] = TIMERS_RCC_REGS;
   *timer_rcc_reg_arr[i] |= (1 << timer_rcc_pos_arr[i]);
 
   return 0;
@@ -70,12 +70,12 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
  *
  * @retval 0 on success, -1 if the timer_handle is NULL.
  */
-int timer_init(const TimerHandle_t *timer_handle) {
+int timer_init(const TimerHandle_t* timer_handle) {
   if (timer_handle == NULL || timer_handle->p_base_addr == NULL) return -1;
 
   // Break the addr and config into separate variables for nicer looking code
-  TIM_TypeDef *timer = (timer_handle->p_base_addr);
-  const TimerConfig_t *cfg = &(timer_handle->cfg);
+  TIM_TypeDef* timer = (timer_handle->p_base_addr);
+  const TimerConfig_t* cfg = &(timer_handle->cfg);
 
   // Get the bits that match the clock divider enum
   uint8_t clock_divider = 0b00;
@@ -105,9 +105,9 @@ int timer_init(const TimerHandle_t *timer_handle) {
   timer->CR2 |= (trig_assign << TIM_CR2_MMS_Pos);
 
   // For easier indexing of addresses
-  volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
-  volatile uint32_t *ccmr_reg[] = TIMER_CCMR_REGS(timer);
-  const TimerChannelConfig_t *channel_cfg[] = CHANNEL_CONFIGS(cfg);
+  volatile uint32_t* ccr_reg[] = TIMER_CCR_REGS(timer);
+  volatile uint32_t* ccmr_reg[] = TIMER_CCMR_REGS(timer);
+  const TimerChannelConfig_t* channel_cfg[] = CHANNEL_CONFIGS(cfg);
 
   // Configure channel specific attributes
   for (int i = 0; i < cfg->channel_count && i < 4; i++) {
@@ -200,11 +200,11 @@ int timer_init(const TimerHandle_t *timer_handle) {
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
-int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
+int timer_set_ccr(TIM_TypeDef* timer, const uint8_t channel, uint16_t pwm_val) {
   if (timer == NULL) return -1;  // Error: null pointer
 
   // Grab the correct CCR register so we can load the pwm value in
-  volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
+  volatile uint32_t* ccr_reg[] = TIMER_CCR_REGS(timer);
 
   // Ensure the value of channel is valid
   if (channel == 0 || channel > SIZEOF(ccr_reg)) return -2;  // Error: invalid channel
@@ -229,7 +229,7 @@ int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
  *
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL.
  */
-int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float pct) {
+int timer_set_pwm_percent(TIM_TypeDef* timer, const uint8_t channel, const float pct) {
   if (timer == NULL) return -1;
 
   // Grab the pwm value from the max value the timer will count up to
@@ -247,11 +247,11 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
  * @return uint16_t Current timer ticks.
  */
 // TODO: Make this function (and a couple others) static inline and defined in the .h file
-uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel) {
+uint16_t timer_get_current_ticks(const TIM_TypeDef* timer, const uint8_t channel) {
   if (timer == NULL) return -1;  // Error: null pointer
 
   // Grab the correct CCR register so we can load the pwm value in
-  const volatile uint32_t *ccr_reg[] = TIMER_CCR_REGS(timer);
+  const volatile uint32_t* ccr_reg[] = TIMER_CCR_REGS(timer);
   return *ccr_reg[channel - 1];
 }
 
@@ -261,7 +261,7 @@ uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel
  * @param timer Pointer to the TIM_TypeDef structure.
  * @return uint16_t Timer period ticks.
  */
-uint16_t timer_get_period_ticks(const TIM_TypeDef *timer) { return timer->ARR; }
+uint16_t timer_get_period_ticks(const TIM_TypeDef* timer) { return timer->ARR; }
 
 /**
  * @brief Configure the timer IRQ interrupt.
@@ -299,7 +299,7 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
  * @param channel Timer channel number.
  * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
  */
-int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel) {
+int timer_irq_handling(TIM_TypeDef* timer, const uint8_t channel) {
   if (timer == NULL) return 0;  // Error: null pointer
 
   // Ensure the value of channel is valid

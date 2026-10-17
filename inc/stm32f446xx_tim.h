@@ -14,7 +14,7 @@ typedef enum {
   TIMER_CHANNEL_MODE_COMPARE = 0,
   TIMER_CHANNEL_MODE_CAPTURE,
   TIMER_CHANNEL_MODE_PWM_HI,
-  TIMER_CHANNEL_MODE_PWM_LO
+  TIMER_CHANNEL_MODE_PWM_LO,
 } TimerChanMode_t;
 typedef enum { TIMER_CLOCK_DIVIDE_1 = 0, TIMER_CLOCK_DIVIDE_2, TIMER_CLOCK_DIVIDE_4 } TimerClockDivider_t;
 typedef enum { TIMER_DISABLE = 0, TIMER_ENABLE } TimerEnable_t;
@@ -33,9 +33,9 @@ typedef enum {
 typedef enum {
   TIMER_TRIGGER_ASSIGNMENT_NONE = 0,
   TIMER_TRIGGER_ASSIGNMENT_CH1 = 0b100,
-  TIMER_TRIGGER_ASSIGNMENT_CH2,
-  TIMER_TRIGGER_ASSIGNMENT_CH3,
-  TIMER_TRIGGER_ASSIGNMENT_CH4
+  TIMER_TRIGGER_ASSIGNMENT_CH2 = 0b101,
+  TIMER_TRIGGER_ASSIGNMENT_CH3 = 0b110,
+  TIMER_TRIGGER_ASSIGNMENT_CH4 = 0b111
 } TimerTrigAssign_t;
 /**
  * Channel specific configuration struct
@@ -91,7 +91,7 @@ typedef struct {
  * NOTE: This API only allows for 16-bit values to be compared to in output mode
  **/
 typedef struct {
-  TIM_TypeDef *p_base_addr;
+  TIM_TypeDef* p_base_addr;
   TimerConfig_t cfg;
 } TimerHandle_t;
 
@@ -105,7 +105,7 @@ typedef struct {
  *
  * @retval 0 on success, -1 on failure (e.g., if base_addr is NULL or out of range).
  */
-int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_state);
+int timer_peri_clock_control(const TIM_TypeDef* base_addr, const uint8_t en_state);
 
 /**
  * @brief  Initializes the timer with the specified configuration.
@@ -117,7 +117,7 @@ int timer_peri_clock_control(const TIM_TypeDef *base_addr, const uint8_t en_stat
  *
  * @retval 0 on success, -1 if the timer_handle is NULL.
  */
-int timer_init(const TimerHandle_t *timer_handle);
+int timer_init(const TimerHandle_t* timer_handle);
 
 /**
  * @brief  Sets the ccr value for a specified timer channel.
@@ -133,7 +133,7 @@ int timer_init(const TimerHandle_t *timer_handle);
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
-int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t ccr_val);
+int timer_set_ccr(TIM_TypeDef* timer, const uint8_t channel, uint16_t ccr_val);
 
 /**
  * @brief  Sets the PWM value for a specified timer channel.
@@ -149,7 +149,7 @@ int timer_set_ccr(TIM_TypeDef *timer, const uint8_t channel, uint16_t ccr_val);
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL,
  *                 -2 if the channel is invalid.
  */
-static inline int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint16_t pwm_val) {
+static inline int timer_set_pwm(TIM_TypeDef* timer, const uint8_t channel, uint16_t pwm_val) {
   return timer_set_ccr(timer, channel, pwm_val);
 }
 
@@ -166,7 +166,7 @@ static inline int timer_set_pwm(TIM_TypeDef *timer, const uint8_t channel, uint1
  *
  * @retval int     Returns 0 on success, -1 if the timer pointer is NULL.
  */
-int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float pct);
+int timer_set_pwm_percent(TIM_TypeDef* timer, const uint8_t channel, const float pct);
 
 /**
  * @brief Get the current timer ticks for a specific channel.
@@ -175,7 +175,7 @@ int timer_set_pwm_percent(TIM_TypeDef *timer, const uint8_t channel, const float
  * @param channel Timer channel number.
  * @return uint16_t Current timer ticks.
  */
-uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel);
+uint16_t timer_get_current_ticks(const TIM_TypeDef* timer, const uint8_t channel);
 
 /**
  * @brief Get the period ticks of the timer.
@@ -183,7 +183,7 @@ uint16_t timer_get_current_ticks(const TIM_TypeDef *timer, const uint8_t channel
  * @param timer Pointer to the TIM_TypeDef structure.
  * @return uint16_t Timer period ticks.
  */
-uint16_t timer_get_period_ticks(const TIM_TypeDef *timer);
+uint16_t timer_get_period_ticks(const TIM_TypeDef* timer);
 
 /**
  * @brief Configure the timer IRQ interrupt.
@@ -208,7 +208,7 @@ void timer_irq_priority_config(const uint8_t irq_number, const uint8_t irq_prior
  * @param channel Timer channel number.
  * @return int IRQ handling status.1 to indicate that there was an interrupt on this channel
  */
-int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel);
+int timer_irq_handling(TIM_TypeDef* timer, const uint8_t channel);
 
 /**
  * @brief Enables the specified timer.
@@ -221,7 +221,7 @@ int timer_irq_handling(TIM_TypeDef *timer, const uint8_t channel);
  *
  * @return int Returns 0 on success, or -1 if the timer pointer is NULL.
  */
-static inline int timer_enable(TIM_TypeDef *timer) {
+static inline int timer_enable(TIM_TypeDef* timer) {
   if (timer == NULL) return -1;
   timer->CR1 |= (1 << TIM_CR1_CEN_Pos);
   return 0;
@@ -238,7 +238,7 @@ static inline int timer_enable(TIM_TypeDef *timer) {
  *
  * @return int Returns 0 on success, or -1 if the timer pointer is NULL.
  */
-static inline int timer_disable(TIM_TypeDef *timer) {
+static inline int timer_disable(TIM_TypeDef* timer) {
   if (timer == NULL) return -1;
   timer->CR1 &= ~(1 << TIM_CR1_CEN_Pos);
   return 0;
